@@ -1,0 +1,72 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.5'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+}
+
+group = 'com.interview'
+version = '0.1.0'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    // 폐쇄망에서는 -PmavenRepoUrl=http://사내저장소/... 로 사내 미러를 지정한다 (docs/setup.md)
+    if (project.hasProperty('mavenRepoUrl')) {
+        maven {
+            url project.property('mavenRepoUrl')
+            allowInsecureProtocol = true
+        }
+    } else {
+        mavenCentral()
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+
+    runtimeOnly 'com.h2database:h2'
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc8'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+    jvmArgs '-Dfile.encoding=UTF-8'
+}
+
+bootRun {
+    // 프로파일을 주지 않으면 local 로 뜬다. 운영 배포(jar 실행)에서는 반드시 SPRING_PROFILES_ACTIVE 를 지정한다.
+    systemProperty 'spring.profiles.active',
+            System.getProperty('spring.profiles.active', System.getenv('SPRING_PROFILES_ACTIVE') ?: 'local')
+    jvmArgs '-Dfile.encoding=UTF-8'
+}
+
+// Hibernate 가 만든 스키마를 Oracle 방언 DDL 로 db/oracle/schema.sql 에 출력한다 (DB 연결 없이 동작).
+task generateOracleSchema(type: JavaExec) {
+    group = 'database'
+    description = 'JPA 엔티티로부터 Oracle DDL(db/oracle/schema.sql)을 생성한다.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.interview.tools.OracleSchemaGenerator'
+    args "${projectDir}/db/oracle/schema.sql"
+    jvmArgs '-Dfile.encoding=UTF-8'
+}

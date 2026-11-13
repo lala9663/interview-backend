@@ -1,0 +1,49 @@
+# 면접자 엑셀 업로드의 컬럼 매핑.
+# 엑셀 양식이 바뀌면 코드가 아니라 이 파일을 고친다. 고치는 법: docs/excel-upload.md
+#
+# - 헤더 순서는 상관없다. 헤더 글자(공백 무시)로 찾는다. aliases 에 다른 표기를 적을 수 있다.
+# - 여기에 없는 헤더의 컬럼은 읽지 않고 버린다(허용 목록 방식).
+# - blind: true 인 컬럼은 값을 읽지 않는다. 파일에 그 컬럼이 있었다는 사실만 blindKey 로 남긴다.
+#   블라인드 기준은 현업이 정한다. 기준이 오면 여기에 항목을 추가한다(docs/open-questions.md).
+# - field 값:
+#     applicantNo | name | jobCode | jobTitle            면접자 기본 항목
+#     education.degree | education.school | education.major | education.gpa
+#     courses | certificates                             쉼표·줄바꿈으로 나눠 목록으로 저장
+#     essay | project | career                           title 과 함께 한 건으로 저장 (여러 컬럼 가능)
+#     extra.<이름>                                        profile.extra.<이름> 에 글자 그대로 저장
+sheetIndex: 0      # 읽을 시트 (0 = 첫 시트)
+headerRow: 1       # 헤더가 있는 행 (1부터)
+
+columns:
+  - { header: 수험번호,     field: applicantNo, required: true, maxLength: 50, aliases: [지원번호, 접수번호] }
+  - { header: 성명,         field: name,        required: true, maxLength: 100, aliases: [이름, 지원자명] }
+  - { header: 지원직무코드, field: jobCode,     required: true, maxLength: 30, aliases: [직무코드] }
+  - { header: 지원직무명,   field: jobTitle,    aliases: [직무명] }
+
+  # ---- 블라인드 항목: 값은 저장하지 않는다 ----
+  - { header: 성별,     blind: true, blindKey: gender }
+  - { header: 생년월일, blind: true, blindKey: birthDate, aliases: [생일] }
+  - { header: 가족사항, blind: true, blindKey: family, aliases: [가족관계] }
+  - { header: 사진,     blind: true, blindKey: photo }
+  - { header: 주소,     blind: true, blindKey: address, aliases: [거주지] }
+  - { header: 출신지역, blind: true, blindKey: hometown, aliases: [본적, 출신지] }
+  - { header: 나이,     blind: true, blindKey: age }
+
+  # ---- 학력 ----
+  - { header: 최종학력,     field: education.degree }
+  - { header: 학교명,       field: education.school }
+  - { header: 전공,         field: education.major }
+  - { header: 학점,         field: education.gpa }
+  - { header: 주요수강과목, field: courses }
+
+  # ---- 자기소개서: title 이 화면과 요약에 쓰이는 문항 제목 ----
+  - { header: 자기소개서1, field: essay, title: 지원동기 }
+  - { header: 자기소개서2, field: essay, title: 직무 역량과 경험 }
+  - { header: 자기소개서3, field: essay, title: 입사 후 포부 }
+
+  # ---- 경험·자격 ----
+  - { header: 프로젝트경험, field: project, title: 프로젝트 경험 }
+  - { header: 경력사항,     field: career,  title: 경력 사항 }
+  - { header: 자격증,       field: certificates }
+  - { header: 어학,         field: extra.languages }
+  - { header: 수상경력,     field: extra.awards }

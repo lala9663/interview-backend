@@ -1,0 +1,27 @@
+# 개발 서버: Oracle + Redis Sentinel. 값은 모두 환경변수로 넣는다(README 의 표).
+spring:
+  datasource:
+    url: ${DB_URL}                    # 예: jdbc:oracle:thin:@//db-host:1521/SERVICE
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+  jpa:
+    database-platform: org.hibernate.dialect.Oracle12cDialect
+    hibernate:
+      # 스키마는 db/oracle/schema.sql 로 DBA 가 만든다. 앱은 맞는지 확인만 한다.
+      ddl-auto: validate
+  redis:
+    password: ${REDIS_PASSWORD:}
+    timeout: 3s
+    sentinel:
+      master: ${REDIS_SENTINEL_MASTER}          # 예: mymaster
+      nodes: ${REDIS_SENTINEL_NODES}            # 예: host1:26379,host2:26379,host3:26379
+      password: ${REDIS_SENTINEL_PASSWORD:}
+
+app:
+  security:
+    jwt-secret: ${JWT_SECRET}
+  token-store:
+    type: redis

@@ -1,0 +1,15 @@
+# 테스트: local 프로파일 위에 덮어쓴다(@ActiveProfiles({"local","test"})).
+# 메모리 H2(Oracle 호환 모드) + Fake Agent.
+spring:
+  datasource:
+    url: jdbc:h2:mem:interview-test;MODE=Oracle;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  agent:
+    mode: fake
+  seed:
+    enabled: true
+    shift-dates-to-today: false
