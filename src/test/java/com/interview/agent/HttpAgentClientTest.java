@@ -55,6 +55,29 @@ class HttpAgentClientTest {
     }
 
     @Test
+    void readsStatsAndIgnoresUnknownFields() {
+        respond("/internal/v1/stats", 200, "{\"instanceId\":\"a1\",\"rooms\":1,\"postSttRunning\":0,\"outboxPending\":0,"
+                + "\"providers\":{\"stt.live\":{\"impl\":\"fake\",\"calls\":18,\"failures\":0,\"waiting\":2,\"health\":\"OK\",\"extra\":1}},"
+                + "\"roomStats\":[{\"roomId\":5,\"queueDepth\":3,\"maxQueueDepth\":4,\"utterances\":9,\"droppedChunks\":1,"
+                + "\"audioConnected\":true,\"newField\":\"x\"}]}");
+        // 모르는 필드에 엄격한 ObjectMapper 로도 읽혀야 한다(Agent 가 필드를 늘려도 깨지지 않게).
+        AgentProperties props = new AgentProperties();
+        props.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+        HttpAgentClient strict = new HttpAgentClient(props, new AppSecurityProperties(), new ObjectMapper());
+
+        AgentDtos.StatsResponse stats = strict.stats();
+
+        assertThat(receivedKey.get("/internal/v1/stats")).isEqualTo("dev-internal-key");
+        assertThat(stats.getRooms()).isEqualTo(1);
+        assertThat(stats.getProviders().get("stt.live").getWaiting()).isEqualTo(2);
+        assertThat(stats.getProviders().get("stt.live").getHealth()).isEqualTo("OK");
+        assertThat(stats.getRoomStats()).hasSize(1);
+        assertThat(stats.getRoomStats().get(0).getRoomId()).isEqualTo(5L);
+        assertThat(stats.getRoomStats().get(0).getDroppedChunks()).isEqualTo(1);
+        assertThat(stats.getRoomStats().get(0).getAudioConnected()).isTrue();
+    }
+
+    @Test
     void callsAgentAsTheContractSays() throws Exception {
         assertThat(client.isUp()).isTrue();
 

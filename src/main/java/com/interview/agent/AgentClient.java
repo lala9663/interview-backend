@@ -22,4 +22,7 @@ public interface AgentClient {
 
     /** 방 마무리(남은 음성 처리, 사후 STT 예약). */
     AgentDtos.FinalizeResponse finalizeRoom(Long roomId, boolean postStt);
+
+    /** Agent 의 운영 통계(방별 큐·마이크 연결, provider 상태). 계약 4장의 GET /internal/v1/stats. 짧은 제한 시간으로 부른다. */
+    AgentDtos.StatsResponse stats();
 }

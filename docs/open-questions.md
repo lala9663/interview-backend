@@ -70,3 +70,22 @@
 ## 4. 계약에 반영된 것
 
 - AI 작업 조회 경로는 `GET /ai-jobs/{jobId}` 다. JD 수정(`PUT /jobs/{id}`)과 `{id}` 의 뜻이 섞이지 않게 나눴다.
+
+## 5. 관리자 집계(계약 2.11)에서 가정한 것
+
+| # | 가정 | 바꿀 위치 |
+| --- | --- | --- |
+| 28 | 주의 기준: 시작 지연 5분, 시간 초과 5분, 무전사 3분, STT 대기 5 이상 또는 건너뜀 1 이상 | `app.operations.*` |
+| 29 | Agent 가 여러 대면 `stats` 는 백엔드가 물어본 한 대의 것이다. 다른 대가 맡은 방은 `audioConnected: null` 이고 `NO_AUDIO`·`STT_BACKLOG` 가 붙지 않는다. 진행 중인데 Agent 가 모르는 방(아무도 접속하지 않은 방)도 같은 이유로 `NO_AUDIO` 를 붙이지 않는다 | `OperationsService` (Agent 쪽에서 전체 방을 모아 주는 API 가 생기면 교체) |
+| 30 | `elapsedMinutes` 는 시작 전이면 null. `lateMinutes`·`overtimeMinutes`·`silentMinutes`·`queueDepth`·`droppedChunks` 는 해당 없으면 0. Agent 가 DOWN 이면 `agent.rooms` 는 null, `providers` 는 빈 배열 | `OperationsService` |
+| 31 | 현황판의 `summary.live` 는 면접 상태 IN_PROGRESS 의 수. 취소된 면접은 `total` 에만 든다 | `OperationsService` |
+| 32 | `endedInterviewCount` 는 방이 ENDED 인 면접 수 | `QualityService` |
+| 33 | "준비된 질문"은 브리핑이 만든 질문(JD·RESUME·BANK) 가운데 숨기지 않은 것. `autoMatched` 는 물은 질문 가운데 전사의 `matchedQuestionId` 로 걸린 것 | `QualityService`, `QuestionRepository` |
+| 34 | `followUps.roomCount` 는 꼬리질문 제안이 한 건이라도 있었던 방의 수 | `FollowUpRepository.summarizeOfRecruitment` |
+| 35 | `scoreGap.byCriterion` 은 항목 코드로 묶는다(트랙·유형이 달라도 코드가 같으면 한 줄). 정렬은 코드 순 | `QualityService` |
+| 36 | 보고서 소요 시간은 방 종료 → 그 면접의 첫 LIVE / 첫 REFINED 보고서. 다시 만든 보고서는 세지 않는다 | `ReportRepository.firstGeneratedOfRecruitment` |
+| 37 | 면접관 편차의 대상은 배정이 있거나 제출한 평가가 있는 사용자. `assignedCount` 는 취소된 면접을 뺀다. `pendingCount` 는 EVALUATING·DONE 인 배정 가운데 미제출 | `InterviewerStatsService` |
+| 38 | `deviationFromPeers` 의 "다른 면접관들의 평균"은 면접관별 그 면접 평균의 평균. `scoreDistribution` 의 키는 1~최대 점수(반올림한 정수) | `InterviewerStatsService` |
+| 39 | 비율도 소수 둘째 자리로 반올림한다(계약의 예시와 같다). 아주 작은 비율은 0.0 으로 보일 수 있다 | `StatMath.rate` |
+| 40 | 집계 성능: 채용 한 건에 면접 1,000건·발화 수만 건을 가정했다. 호출마다 다시 계산하고 캐시는 없다. 점수 비교는 평가 행(면접 수 × 면접관 수)을 메모리로 읽는다. 실제 Oracle 에서의 실행 계획은 확인하지 못했다(`IV_UTTERANCE.MATCHED_QUESTION_ID` 에는 인덱스가 없다) | 느리면 짧은 캐시 또는 집계 테이블 |
+| 41 | 시드의 진행 중 면접 두 건은 서버를 처음 띄운 시각 기준으로 만들어진다. 시간이 지나면 초과·무전사 시간이 계속 늘어난다 | `LocalSeedRunner` (`data/` 를 지우면 다시 만들어진다) |

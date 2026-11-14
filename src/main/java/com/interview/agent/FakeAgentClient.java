@@ -191,6 +191,33 @@ public class FakeAgentClient implements AgentClient {
         return new AgentDtos.FinalizeResponse(true, postStt, "MEMORY_ONLY");
     }
 
+    private volatile AgentDtos.StatsResponse fakeStats;
+    private volatile boolean statsDown;
+
+    /** 테스트용: stats() 가 돌려줄 값을 정한다. null 이면 기본값(방 없음). */
+    public void setFakeStats(AgentDtos.StatsResponse stats) {
+        this.fakeStats = stats;
+    }
+
+    /** 테스트용: true 면 stats() 가 Agent 가 죽은 것처럼 실패한다. */
+    public void setStatsDown(boolean statsDown) {
+        this.statsDown = statsDown;
+    }
+
+    @Override
+    public AgentDtos.StatsResponse stats() {
+        if (statsDown) {
+            throw new AgentException(AgentException.AGENT_UNAVAILABLE, "Agent 통계를 읽을 수 없습니다. (가짜 장애)", null);
+        }
+        AgentDtos.StatsResponse stats = fakeStats;
+        if (stats != null) {
+            return stats;
+        }
+        AgentDtos.StatsResponse empty = new AgentDtos.StatsResponse();
+        empty.setInstanceId("fake-agent");
+        return empty;
+    }
+
     private static String cut(String s, int max) {
         if (s == null) {
             return "";

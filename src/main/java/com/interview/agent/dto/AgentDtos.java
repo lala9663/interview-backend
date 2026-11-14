@@ -1,8 +1,11 @@
 package com.interview.agent.dto;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.interview.candidate.CandidateProfile;
 import com.interview.interview.InterviewType;
@@ -175,5 +178,39 @@ public final class AgentDtos {
         private boolean flushed;
         private boolean postSttScheduled;
         private String audioRetention;
+    }
+
+    // ---- GET /internal/v1/stats (운영 통계). Agent 가 필드를 늘려도 깨지지 않게 모르는 필드는 무시한다. ----
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class StatsResponse {
+        private String instanceId;
+        /** 이 Agent 가 지금 맡고 있는 방 수. */
+        private int rooms;
+        /** 역할(llm.fast, stt.live ...) → 상태. */
+        private Map<String, ProviderStat> providers = new LinkedHashMap<String, ProviderStat>();
+        private List<RoomStat> roomStats = new ArrayList<RoomStat>();
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ProviderStat {
+        private String impl;
+        private long calls;
+        private long failures;
+        private int waiting;
+        private String health;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class RoomStat {
+        private Long roomId;
+        private int queueDepth;
+        private int maxQueueDepth;
+        private int utterances;
+        private int droppedChunks;
+        private Boolean audioConnected;
     }
 }

@@ -43,7 +43,10 @@ import com.interview.interview.InterviewService;
 import com.interview.interview.InterviewStatus;
 import com.interview.interview.InterviewType;
 import com.interview.interview.MatchedBy;
+import com.interview.job.AiJob;
+import com.interview.job.AiJobRepository;
 import com.interview.job.JobStatus;
+import com.interview.job.JobType;
 import com.interview.question.Question;
 import com.interview.question.QuestionRepository;
 import com.interview.question.QuestionSource;
@@ -58,6 +61,8 @@ import com.interview.report.Report;
 import com.interview.report.ReportBasis;
 import com.interview.report.ReportDetail;
 import com.interview.report.ReportRepository;
+import com.interview.room.FollowUp;
+import com.interview.room.FollowUpRepository;
 import com.interview.room.Room;
 import com.interview.room.RoomRepository;
 import com.interview.room.RoomStatus;
@@ -105,6 +110,8 @@ public class LocalSeedRunner implements ApplicationRunner {
     private final AiEvaluationRepository aiEvaluationRepository;
     private final InterviewerEvaluationRepository evaluationRepository;
     private final ReportRepository reportRepository;
+    private final FollowUpRepository followUpRepository;
+    private final AiJobRepository aiJobRepository;
 
     @Value("${app.seed.shift-dates-to-today:true}")
     private boolean shiftDatesToToday;
@@ -143,6 +150,19 @@ public class LocalSeedRunner implements ApplicationRunner {
             if (i.getScheduledAt() != null) {
                 i.setScheduledAt(i.getScheduledAt().plusDays(days));
             }
+        }
+        // 방과 보고서의 시각도 같이 옮겨야 관리자 집계(진행 시간, 보고서 소요 시간)가 어긋나지 않는다.
+        for (Room room : roomRepository.findAll()) {
+            room.setCreatedAt(room.getCreatedAt().plusDays(days));
+            if (room.getStartedAt() != null) {
+                room.setStartedAt(room.getStartedAt().plusDays(days));
+            }
+            if (room.getEndedAt() != null) {
+                room.setEndedAt(room.getEndedAt().plusDays(days));
+            }
+        }
+        for (Report report : reportRepository.findAll()) {
+            report.setGeneratedAt(report.getGeneratedAt().plusDays(days));
         }
         log.info("시드 면접 일정을 {}일 옮겼습니다(app.seed.shift-dates-to-today).", days);
     }
@@ -207,10 +227,12 @@ public class LocalSeedRunner implements ApplicationRunner {
         report(g3pt, 1, ReportBasis.LIVE, g3q);
 
         // 4번: PT 진행 중(방 LIVE, 전사 일부)
-        Interview g4pt = interview(grads.get(3), InterviewType.PT, 1, InterviewStatus.IN_PROGRESS, day.plusHours(11));
+        // 운영 현황판에서 "예정 시간을 넘김"으로 보이게, 지금 기준 50분 전 예정 · 48분 전 시작(예정 길이 30분)으로 둔다.
+        Interview g4pt = interview(grads.get(3), InterviewType.PT, 1, InterviewStatus.IN_PROGRESS, Times.now().minusMinutes(50));
         assign(g4pt, jung, han);
         List<Question> g4q = briefing(g4pt, grads.get(3));
         Room g4room = room(g4pt, RoomStatus.LIVE);
+        g4room.setStartedAt(Times.now().minusMinutes(48));
         transcript(g4room, g4q, 2);
 
         // 5~9번: PT 예정(브리핑 완료). 5번은 방까지 만들어 둠
@@ -260,6 +282,112 @@ public class LocalSeedRunner implements ApplicationRunner {
 
         Interview e4pf = interview(e4, InterviewType.PORTFOLIO, 1, InterviewStatus.WAITING, null);
         assign(e4pf, kim, park);
+
+        seedAdminStatsDemo(newGrad, day, new UserAccount[][] { { park, choi }, { lee, han }, { choi, park }, { jung, han },
+                { kim, park }, { lee, han }, { park, han } });
+    }
+
+    /**
+     * 관리자 집계 화면(운영 현황판, AI 품질, 면접관 편차)이 비어 보이지 않게 하는 추가 데이터.
+     * 신입 공채에 끝난 면접 6건(DONE 4, EVALUATING 2)과 늦게 시작한 진행 중 면접 1건을 더한다.
+     */
+    private void seedAdminStatsDemo(Recruitment newGrad, LocalDateTime day, UserAccount[][] pairs) {
+        String[] names = { "권민서", "황준우", "안서현", "송지민", "류하람", "홍예서", "백도현" };
+        String[][] jobs = { { "SW", "SW개발" }, { "HW", "HW설계" }, { "AI", "AI연구" }, { "MGMT", "경영지원" } };
+        LocalDateTime now = Times.now();
+        for (int n = 0; n < names.length; n++) {
+            String[] j = jobs[n % jobs.length];
+            Candidate c = candidate(newGrad, String.format("2026H-9%03d", 13 + n), names[n], j[0], j[1], 12 + n, false);
+            if (n == 6) {
+                // 예정보다 12분 늦게 시작한 진행 중 면접(전사는 방금까지 들어옴)
+                Interview late = interview(c, InterviewType.PT, 1, InterviewStatus.IN_PROGRESS, now.minusMinutes(20));
+                assign(late, pairs[n][0], pairs[n][1]);
+                Room lateRoom = room(late, RoomStatus.LIVE);
+                lateRoom.setStartedAt(now.minusMinutes(8));
+                for (Utterance u : transcript(lateRoom, briefing(late, c), 2)) {
+                    u.setSavedAt(now.minusMinutes(1));
+                }
+                continue;
+            }
+            boolean done = n < 4;
+            Interview pt = interview(c, InterviewType.PT, 1, done ? InterviewStatus.DONE : InterviewStatus.EVALUATING,
+                    day.plusHours(8).plusMinutes(20L * n));
+            assign(pt, pairs[n][0], pairs[n][1]);
+            List<Question> questions = briefing(pt, c);
+            Room room = room(pt, RoomStatus.ENDED);
+            List<Utterance> utterances = transcript(room, questions, 5);
+            // 화자 판정 방법을 섞는다: 규칙 판정, 사람이 고친 것, 정하지 못한 것
+            utterances.get(1).setSpeakerMethod(SpeakerMethod.RULE);
+            utterances.get(3).setSpeakerMethod(SpeakerMethod.RULE);
+            if (n % 2 == 0) {
+                utterances.get(5).setSpeakerMethod(SpeakerMethod.MANUAL);
+            }
+            if (n == 3) {
+                utterances.get(7).setSpeaker(Speaker.UNKNOWN);
+                utterances.get(7).setSpeakerMethod(SpeakerMethod.NONE);
+            }
+            followUps(room, pt, 4 + n % 3, n % 3);
+
+            AiEvaluation ai = aiEvaluation(pt);
+            if (n == 1) {
+                // AI 가 근거를 찾지 못해 점수를 내지 않은 항목
+                ((ObjectNode) ai.getScores().get(3)).putNull("score");
+            }
+            aiJob(pt, JobType.AI_EVALUATION, JobStatus.SUCCEEDED);
+            evaluation(pt, pairs[n][0]);
+            if (done) {
+                evaluation(pt, pairs[n][1]); // EVALUATING 인 면접은 한 명이 아직 제출하지 않았다.
+            }
+            if (n == 5) {
+                aiJob(pt, JobType.REPORT, JobStatus.FAILED); // 보고서 작업 실패 → 현황판의 JOB_FAILED
+                continue;
+            }
+            report(pt, 1, ReportBasis.LIVE, questions);
+            aiJob(pt, JobType.REPORT, JobStatus.SUCCEEDED);
+            if (n % 2 == 0) {
+                room.setPostSttModel("seed-stt");
+                report(pt, 2, ReportBasis.REFINED, questions);
+                aiJob(pt, JobType.REPORT, JobStatus.SUCCEEDED);
+            }
+        }
+    }
+
+    /** 꼬리질문 후보 count 개(그 가운데 used 개는 채택됨). */
+    private void followUps(Room room, Interview i, int count, int used) {
+        String[] texts = { "그때 가장 어려웠던 점은 무엇이었습니까?", "측정 결과가 예상과 달랐던 적이 있습니까?", "다시 한다면 무엇을 다르게 하겠습니까?",
+                "그 결정에 반대한 팀원은 어떻게 설득했습니까?", "그 경험이 지원 직무와 어떻게 이어집니까?", "결과를 어떻게 검증했습니까?" };
+        for (int n = 0; n < count && n < texts.length; n++) {
+            FollowUp f = new FollowUp();
+            f.setRoomId(room.getId());
+            f.setBasedOnSeq(2 + n);
+            f.setClientId("f-" + (2 + n) + "-1");
+            f.setText(texts[n]);
+            f.setRationale("답변을 구체화하기 위한 질문");
+            f.setCreatedAt(Times.now());
+            if (n < used) {
+                Question q = question(i, 10 + n, QuestionSource.FOLLOW_UP, "꼬리질문", texts[n], "답변을 구체화하기 위한 질문");
+                q.setAsked(true);
+                f.setUsed(true);
+                f.setQuestionId(q.getId());
+            }
+            followUpRepository.save(f);
+        }
+    }
+
+    private void aiJob(Interview i, JobType type, JobStatus status) {
+        AiJob job = new AiJob();
+        job.setType(type);
+        job.setStatus(status);
+        job.setInterviewId(i.getId());
+        job.setWorkerId("seed");
+        job.setCreatedAt(Times.now());
+        job.setStartedAt(Times.now());
+        job.setFinishedAt(Times.now());
+        if (status == JobStatus.FAILED) {
+            job.setErrorCode("MODEL_FAILED");
+            job.setErrorMessage("모델이 응답하지 않았습니다. (시드 데이터)");
+        }
+        aiJobRepository.save(job);
     }
 
     // ------------------------------------------------------------------ 기준 데이터
@@ -542,10 +670,13 @@ public class LocalSeedRunner implements ApplicationRunner {
         u.setEndMs(endMs);
         u.setMatchedQuestionId(matchedQuestionId);
         u.setSource(TranscriptSource.LIVE);
+        if (room.getStartedAt() != null) {
+            u.setSavedAt(room.getStartedAt().plusSeconds(endMs / 1000));
+        }
         return utteranceRepository.save(u);
     }
 
-    private void aiEvaluation(Interview i) {
+    private AiEvaluation aiEvaluation(Interview i) {
         ArrayNode scores = Json.array();
         int n = 0;
         for (EvalCriterion c : criterionRepository.findByTrackAndInterviewTypeOrderByOrderNoAsc(i.getTrack(), i.getType())) {
@@ -563,20 +694,31 @@ public class LocalSeedRunner implements ApplicationRunner {
         e.setGeneratedAt(Times.now());
         e.setScores(scores);
         e.setOverallComment("질문 의도에 맞게 답했고 경험을 수치로 설명했습니다. 본인 기여 범위는 추가 확인이 필요합니다. (AI 참고 평가)");
-        aiEvaluationRepository.save(e);
+        return aiEvaluationRepository.save(e);
     }
 
+    /** 면접관 평가. 면접관마다 점수 성향이 조금 다르다(박준호는 후하고, 이하린·정유진은 짜다). */
     private void evaluation(Interview i, UserAccount u) {
+        int bias = "E1002".equals(u.getEmployeeNo()) ? 1
+                : ("E1003".equals(u.getEmployeeNo()) || "E1005".equals(u.getEmployeeNo())) ? -1 : 0;
+        int[] base = { 4, 3, 4, 3 };
         ArrayNode scores = Json.array();
+        int index = 0;
+        int sum = 0;
         for (EvalCriterion c : criterionRepository.findByTrackAndInterviewTypeOrderByOrderNoAsc(i.getTrack(), i.getType())) {
-            scores.addObject().put("criterionCode", c.getCode()).put("score", 4).put("comment", "");
+            int score = base[index % base.length] + bias + ((i.getId() + index) % 3 == 0 ? 1 : 0);
+            score = Math.max(1, Math.min(c.getMaxScore(), score));
+            scores.addObject().put("criterionCode", c.getCode()).put("score", score).put("comment", "");
+            sum += score;
+            index++;
         }
+        double mean = index == 0 ? 0 : (double) sum / index;
         InterviewerEvaluation e = new InterviewerEvaluation();
         e.setInterviewId(i.getId());
         e.setUserId(u.getId());
         e.setMemo("측정 방법을 구체적으로 설명함. 팀 내 역할은 한 번 더 확인하면 좋겠음.");
         e.setScores(scores);
-        e.setGrade("B+");
+        e.setGrade(mean >= 4.5 ? "A" : mean >= 3.5 ? "B+" : mean >= 2.5 ? "B" : "C");
         e.setSubmitted(true);
         e.setUpdatedAt(Times.now());
         e.setSubmittedAt(Times.now());
@@ -616,7 +758,14 @@ public class LocalSeedRunner implements ApplicationRunner {
         r.setVersion(version);
         r.setBasis(basis);
         r.setDetail(ReportDetail.of(i.getTrack()));
-        r.setGeneratedAt(Times.now());
+        // 방이 끝난 뒤 초안은 30~70초, 보정본은 3~6분쯤 걸린 것으로 둔다(AI 품질 화면의 소요 시간).
+        Room room = roomRepository.findByInterviewId(i.getId()).orElse(null);
+        LocalDateTime generatedAt = Times.now();
+        if (room != null && room.getEndedAt() != null) {
+            generatedAt = basis == ReportBasis.REFINED ? room.getEndedAt().plusSeconds(180 + (i.getId() % 4) * 60)
+                    : room.getEndedAt().plusSeconds(30 + (i.getId() % 5) * 10);
+        }
+        r.setGeneratedAt(generatedAt);
         r.setModel(MODEL);
         r.setContent(content);
         reportRepository.save(r);

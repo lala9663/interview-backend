@@ -58,6 +58,7 @@ app:
     connect-timeout-seconds: 3
     health-timeout-seconds: 2
     finalize-timeout-seconds: 30
+    stats-timeout-seconds: 3
     # 트랙별 제한 시간(초)
     new-grad:
       briefing-seconds: 120
@@ -75,6 +76,13 @@ app:
     # 재시작 때 끝나지 않은 작업: fail | restart
     recovery: fail
     instance-id: ${APP_INSTANCE_ID:}
+
+  # 운영 현황판(/admin/operations)의 주의 기준(분, 큐 깊이)
+  operations:
+    not-started-minutes: 5
+    overtime-minutes: 5
+    silent-minutes: 3
+    stt-backlog-depth: 5
 
   briefing:
     jd-question-count: 4

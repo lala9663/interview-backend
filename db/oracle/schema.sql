@@ -258,6 +258,7 @@ create sequence iv_utterance_seq start with 1 increment by  1;
         raw_text clob,
         refined_text clob,
         room_id number(19,0) not null,
+        saved_at timestamp,
         seq_no number(10,0) not null,
         source_kind varchar2(20 char) not null,
         speaker varchar2(20 char) not null,

@@ -25,6 +25,8 @@ public class AgentProperties {
     private int connectTimeoutSeconds = 3;
     private int healthTimeoutSeconds = 2;
     private int finalizeTimeoutSeconds = 30;
+    /** 운영 현황판이 부르는 /internal/v1/stats 의 제한 시간. 화면 조회라 짧게 둔다. */
+    private int statsTimeoutSeconds = 3;
 
     /** 트랙별 제한 시간. 신입은 1~2분 안에 초안이 나와야 하고, 경력 상세 보고서는 오래 걸려도 된다. */
     private Timeouts newGrad = new Timeouts(120, 120, 120);

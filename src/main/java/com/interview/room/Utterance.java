@@ -66,6 +66,10 @@ public class Utterance {
     @Column(name = "SOURCE_KIND", nullable = false, length = 20)
     private TranscriptSource source;
 
+    /** 백엔드가 이 줄을 저장한(마지막으로 덮어쓴) 시각. 운영 현황판의 "마지막 전사 시각"에 쓴다. */
+    @Column(name = "SAVED_AT")
+    private java.time.LocalDateTime savedAt;
+
     /** 평가·보고서에 쓰는 글: 다듬은 글이 있으면 그것, 없으면 원문. */
     public String bestText() {
         return refinedText != null && !refinedText.trim().isEmpty() ? refinedText : (rawText == null ? "" : rawText);

@@ -126,6 +126,7 @@ public class TranscriptService {
         u.setEndMs(in.getEndMs());
         u.setMatchedQuestionId(in.getMatchedQuestionId());
         u.setSource(source);
+        u.setSavedAt(com.interview.common.Times.now());
     }
 
     private static String cut(String s, int max) {

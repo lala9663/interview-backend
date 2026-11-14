@@ -93,6 +93,24 @@ public class HttpAgentClient implements AgentClient {
                 props.getFinalizeTimeoutSeconds());
     }
 
+    @Override
+    public AgentDtos.StatsResponse stats() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(InternalKeyFilter.HEADER, internalKey);
+        try {
+            AgentDtos.StatsResponse result = template(props.getStatsTimeoutSeconds())
+                    .exchange(props.getBaseUrl() + "/internal/v1/stats", HttpMethod.GET, new HttpEntity<Object>(headers),
+                            AgentDtos.StatsResponse.class)
+                    .getBody();
+            if (result == null) {
+                throw new AgentException(AgentException.AGENT_UNAVAILABLE, "Agent 통계 응답이 비어 있습니다.", null);
+            }
+            return result;
+        } catch (RestClientException e) {
+            throw new AgentException(AgentException.AGENT_UNAVAILABLE, "Agent 통계를 읽을 수 없습니다.", e);
+        }
+    }
+
     private <T> T post(String path, Object body, Class<T> responseType, int readTimeoutSeconds) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

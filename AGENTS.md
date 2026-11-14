@@ -41,6 +41,7 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 | `evaluation` `report` `job` | 면접 후(평가·보고서) / AI 작업 |
 | `agent` | Agent 클라이언트(`AgentClient`: HTTP, Fake) |
 | `dashboard` `seed` | 집계 / local 시드 |
+| `adminstats` | 관리자 집계(운영 현황판, AI 품질, 면접관 편차). 읽기 전용. 다른 기능의 repository 집계 쿼리를 읽어 조립한다 |
 
 - 다른 기능의 데이터가 필요하면 그 기능의 **service** 를 부른다. 읽기 전용 조립(`InterviewAssembler`)만 repository 를 직접 쓴다.
 - enum, 오류 코드, 설정(`@ConfigurationProperties`)은 **주인 기능의 패키지**에 둔다. 예: `InterviewStatus` → `interview`, `app.matching.*` → `matching/MatchingProperties`.

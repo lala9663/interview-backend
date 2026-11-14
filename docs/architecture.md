@@ -29,6 +29,7 @@
 | `job` | `AiJob`, `AiJobService`, `AiJobRunner`, `AiJobRecovery`, `AiJobHandler` | 2.8 |
 | `agent` | `AgentClient`, `HttpAgentClient`, `FakeAgentClient`, `dto.AgentDtos` | 4 |
 | `dashboard` | `DashboardService` | 2.9 |
+| `adminstats` | `AdminStatsController`, `OperationsService`, `QualityService`, `InterviewerStatsService`, `OperationsProperties` | 2.11 |
 | `seed` | `LocalSeedRunner` | - |
 
 엔티티끼리는 JPA 연관(`@ManyToOne`)을 걸지 않고 id(`Long`)로만 가리킨다. 그래서 DB 에 FK 제약이 없다(정합성은 서비스 코드가 지킨다).
@@ -128,3 +129,13 @@ PUT /interviews/{id}/my-evaluation { submitted: true }
 3. **Agent 요청**: `AgentDtos` 에 면접자 이름·수험번호 필드가 없다. profile 만 간다.
 4. **글 속의 표현**(자소서에 가족 이야기를 쓴 경우 등)은 Agent 가 걸러 `excluded` 로 알려 준다. 백엔드는 그것을 `blindedFields` 와 합쳐 브리핑의 `excluded` 로 보여 준다.
 5. `BlindFieldTest` 가 DB·응답·Agent 요청·방 context 에 블라인드 값이 없는지 검사한다.
+
+## 8. 관리자 집계 (adminstats)
+
+계약 2.11 의 세 엔드포인트(`/admin/operations`, `/admin/quality`, `/admin/interviewer-stats`). ADMIN 전용, 읽기 전용이고 테이블을 새로 만들지 않는다.
+
+- **조회 방식**: 면접 수와 무관하게 조회 횟수가 일정하다. 건수(전사, 꼬리질문, 질문, 작업, 보고서 시각)는 각 기능 repository 의 JPQL 집계(`count`, `group by`, `min`/`max`)로 가져오고, 채용 범위는 서브쿼리(`interviewId in (select i.id from Interview i where i.recruitmentId = :rid)`)로 건다. 발화를 엔티티로 읽지 않는다.
+- **자바에서 계산하는 것**: 점수는 JSON(CLOB)에 들어 있어 DB 에서 집계할 수 없다. AI 평가와 제출된 면접관 평가 행을 한 번씩 읽어 계산한다(`ScoreJson`, `StatMath`).
+- **운영 현황판**: `OperationsService` 가 먼저 트랜잭션 밖에서 `AgentClient.stats()`(Agent 의 `GET /internal/v1/stats`, 제한 시간 `app.agent.stats-timeout-seconds`)를 부르고, 그 뒤 DB 를 읽어 방별로 합친다. Agent 호출이 실패하면 `agent.status: "DOWN"` 으로 답하고 나머지는 그대로 돌려준다(진행 중인 방에 `AGENT_DOWN`).
+- **주의 기준**: `app.operations.*`(`OperationsProperties`).
+- **마지막 전사 시각**: `IV_UTTERANCE.SAVED_AT`(백엔드가 그 줄을 저장한 시각). 값이 없는 옛 행은 방 시작 시각 + 마지막 발화의 `endMs` 로 어림한다.
