@@ -24,7 +24,7 @@ import com.interview.question.QuestionSource;
 
 import lombok.RequiredArgsConstructor;
 
-/** 면접 방의 상태 전이와 입장권. 계약 2.7. */
+/** 면접 방의 상태 전이와 입장권. API 명세 2.7. */
 @Service
 @RequiredArgsConstructor
 public class RoomService {

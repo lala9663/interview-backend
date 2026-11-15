@@ -26,7 +26,7 @@ import com.interview.agent.dto.AgentDtos;
 import com.interview.auth.AppSecurityProperties;
 import com.interview.internal.InternalKeyFilter;
 
-/** Agent 를 HTTP 로 부르는 구현(계약 4장). 제한 시간별로 RestTemplate 을 하나씩 만들어 재사용한다. */
+/** Agent 를 HTTP 로 부르는 구현(API 명세 4장). 제한 시간별로 RestTemplate 을 하나씩 만들어 재사용한다. */
 @Component
 @ConditionalOnProperty(name = "app.agent.mode", havingValue = "http", matchIfMissing = true)
 public class HttpAgentClient implements AgentClient {
@@ -124,7 +124,7 @@ public class HttpAgentClient implements AgentClient {
             }
             return result;
         } catch (HttpStatusCodeException e) {
-            // Agent 가 오류 응답을 줌. 본문이 계약의 오류 모양이면 code/message 를 그대로 쓴다.
+            // Agent 가 오류 응답을 줌. 본문이 API 명세의 오류 모양이면 code/message 를 그대로 쓴다.
             String code = AgentException.MODEL_FAILED;
             String message = "Agent 오류 응답(" + e.getRawStatusCode() + "): " + path;
             try {

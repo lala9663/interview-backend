@@ -30,7 +30,7 @@ import com.interview.user.UserService;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Interview 엔티티 묶음을 계약의 Interview 응답으로 바꾼다.
+ * Interview 엔티티 묶음을 API 명세의 Interview 응답으로 바꾼다.
  * 목록에서 N+1 조회가 나지 않도록 딸린 데이터(면접자, 면접관, 방, 브리핑, 보고서)를 한꺼번에 읽는다.
  */
 @Component

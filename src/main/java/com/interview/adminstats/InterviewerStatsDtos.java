@@ -9,7 +9,7 @@ import java.util.TreeMap;
 import lombok.Getter;
 import lombok.Setter;
 
-/** GET /admin/interviewer-stats 응답(계약 2.11). 제출된 평가만 집계한다. */
+/** GET /admin/interviewer-stats 응답(API 명세 2.11). 제출된 평가만 집계한다. */
 public final class InterviewerStatsDtos {
 
     private InterviewerStatsDtos() {

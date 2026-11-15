@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** 집계에 쓰는 계산. 계약 2.11: 비율은 0~1, 분모가 0이면 null, 소수 둘째 자리까지. */
+/** 집계에 쓰는 계산. API 명세 2.11: 비율은 0~1, 분모가 0이면 null, 소수 둘째 자리까지. */
 final class StatMath {
 
     private StatMath() {

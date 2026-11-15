@@ -6,7 +6,7 @@ import javax.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Agent 가 보내는 전사 한 줄(계약 5장의 utterances / refined-transcript 의 items[]). */
+/** Agent 가 보내는 전사 한 줄(API 명세 5장의 utterances / refined-transcript 의 items[]). */
 @Getter
 @Setter
 public class UtteranceInput {

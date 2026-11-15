@@ -42,7 +42,7 @@ import com.interview.room.UtteranceRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * AI 품질 점검(계약 2.11 의 /admin/quality). 읽기 전용 집계다.
+ * AI 품질 점검(API 명세 2.11 의 /admin/quality). 읽기 전용 집계다.
  *
  * 건수를 세는 것(전사, 꼬리질문, 질문, 작업, 보고서 시각)은 DB 에서 JPQL 집계로 가져온다.
  * 점수 비교만은 점수가 JSON(CLOB)에 들어 있어 평가 행을 읽어 자바에서 계산한다(면접 수 × 면접관 수 만큼의 행).

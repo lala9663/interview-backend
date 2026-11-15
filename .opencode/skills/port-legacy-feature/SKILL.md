@@ -21,7 +21,7 @@ description: 기존 사내 코드(Python 백엔드, Vue 화면)에 있던 기능
 | 계층 | 기존 코드에서 찾을 것 | 갈 곳 |
 | --- | --- | --- |
 | 화면 | 컴포넌트, 화면 상태, 표시 문구 | frontend |
-| API | 경로, 요청·응답 모양 | 계약(`docs/contract/api-contract.md`)에 맞춘다 |
+| API | 경로, 요청·응답 모양 | API 명세(`docs/contract/api-contract.md`)에 맞춘다 |
 | 권한 | 누가 할 수 있는가(역할, 소유자 검사) | **backend** |
 | 업무 규칙 | 상태 전이, 검증, 중복 처리, 계산 규칙 | **backend** |
 | 저장 | 테이블·모델, 조회 조건, 트랜잭션 범위 | **backend** |
@@ -34,7 +34,7 @@ description: 기존 사내 코드(Python 백엔드, Vue 화면)에 있던 기능
 
 위에서부터 차례로 묻는다.
 
-1. **DB 에 쓰는가?** → backend. Agent 는 DB 에 닿지 않는다. Agent 가 만든 결과를 저장해야 하면 Agent → backend 내부 API(계약 5장)로 보낸다.
+1. **DB 에 쓰는가?** → backend. Agent 는 DB 에 닿지 않는다. Agent 가 만든 결과를 저장해야 하면 Agent → backend 내부 API(API 명세 5장)로 보낸다.
 2. **모델(LLM, STT, 임베딩)을 부르거나 프롬프트를 다루는가?** → agent. 여기에 프롬프트 문자열이나 모델 주소를 두지 않는다.
 3. **"누가 할 수 있는가"를 정하는가?** → backend. 화면에서 버튼을 숨기는 것만으로 끝내지 않는다.
 4. **상태가 바뀌는가(면접 상태, 방 상태, 제출 여부)?** → backend 가 바꾼다. Agent 나 프론트가 상태값을 직접 정해 보내지 않는다.
@@ -51,7 +51,7 @@ description: 기존 사내 코드(Python 백엔드, Vue 화면)에 있던 기능
 
 1. **범위 확인.** 이 서비스의 범위는 면접 전(업로드·매칭·브리핑), 면접 중(방·전사·메모), 면접 후(평가·보고서)다.
    서류 선별, 일정 조율, 합격 통보 같은 것은 범위 밖이다. 범위 밖이면 옮기지 말고 사람에게 묻는다.
-2. **계약 확인.** 그 기능의 API 가 계약에 있는가? 없거나 모양이 다르면 `change-api-contract`. 기존 API 의 경로·필드명을 그대로 가져오지 않는다(계약이 기준이다).
+2. **API 명세 확인.** 그 기능의 API 가 API 명세에 있는가? 없거나 모양이 다르면 `change-api-contract`. 기존 API 의 경로·필드명을 그대로 가져오지 않는다(API 명세가 기준이다).
 3. **이미 있는지 확인.** 같은 개념이 이 레포에 있으면 새로 만들지 않는다.
    - 기존의 "지원자" = `candidate.Candidate`, "면접 세션" = `interview.Interview` + `room.Room`, "스크립트/대화록" = `room.Utterance`
    - 기존의 "요약/사전 분석" = `briefing.Briefing`, "평가표" = `evaluation.*`, "결과 리포트" = `report.Report`, "백그라운드 작업" = `job.AiJob`
@@ -60,7 +60,7 @@ description: 기존 사내 코드(Python 백엔드, Vue 화면)에 있던 기능
 5. **업무 규칙.** 기존 코드의 규칙을 문장으로 먼저 적고(주석이나 PR 설명), 그 문장대로 서비스에 구현한다.
    Python 의 동적 처리(딕셔너리 그대로 넘기기, None 허용)는 DTO 와 명시적 검증으로 바꾼다.
 6. **AI 호출 지점.** 기존 코드가 모델을 부르던 자리는 `AgentClient` 호출로 바꾼다.
-   - 계약 4장에 맞는 호출이 있으면 그것을 쓴다.
+   - API 명세 4장에 맞는 호출이 있으면 그것을 쓴다.
    - 없으면 agent 레포에 새 내부 API 가 필요하다 → `change-api-contract` → `AgentClient` 에 메서드 추가 → `HttpAgentClient`, `FakeAgentClient`, `AgentDtos` 를 함께 고친다.
    - Agent 구현이 아직 없어도 `FakeAgentClient` 로 이 레포의 작업은 끝낼 수 있다.
 7. **Java 8 로 쓴다.** Python 코드를 줄 단위로 번역하지 않는다. 컴프리헨션은 for 문으로, f-string 은 문자열 연결로, dataclass 는 Lombok DTO 로.
@@ -86,7 +86,7 @@ description: 기존 사내 코드(Python 백엔드, Vue 화면)에 있던 기능
 [agent 레포에 필요한 것]
 - 기존 위치: legacy/services/summary.py 의 build_prompt(), call_llm()
 - 하는 일: 이력서 요약을 만들고 금지 표현을 거른다
-- 필요한 내부 API: POST /internal/v1/… (요청·응답 모양)   ← 계약 변경 필요 여부
+- 필요한 내부 API: POST /internal/v1/… (요청·응답 모양)   ← API 변경 필요 여부
 
 [frontend 레포에 필요한 것]
 - 기존 위치: legacy/web/src/views/Result.vue
@@ -99,7 +99,7 @@ description: 기존 사내 코드(Python 백엔드, Vue 화면)에 있던 기능
 - [ ] 분해 표(1장)를 만들었고, 계층마다 갈 곳을 정했다
 - [ ] 이 서비스의 범위 안인지 확인했다
 - [ ] 이 레포에는 저장·권한·업무 규칙만 들어왔다(프롬프트·모델 호출·텍스트 분석 없음)
-- [ ] 계약의 경로·필드명을 따랐다(기존 API 의 이름을 가져오지 않았다)
+- [ ] API 명세의 경로·필드명을 따랐다(기존 API 의 이름을 가져오지 않았다)
 - [ ] 이미 있는 엔티티·서비스를 다시 만들지 않았다
 - [ ] 블라인드 항목을 가져오지 않았다. `BlindFieldTest` 통과
 - [ ] 엔티티는 Oracle 규칙을 지켰고 `./gradlew generateOracleSchema` 를 돌렸다

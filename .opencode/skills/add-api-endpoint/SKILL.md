@@ -1,6 +1,6 @@
 ---
 name: add-api-endpoint
-description: interview-backend 에 REST 엔드포인트를 추가하거나 기존 엔드포인트의 동작을 바꿀 때 쓴다. 계약 확인, 패키지 선택, 권한, 오류 응답, 테스트까지의 순서와 이 레포의 관례를 담고 있다.
+description: interview-backend 에 REST 엔드포인트를 추가하거나 기존 엔드포인트의 동작을 바꿀 때 쓴다. API 명세 확인, 패키지 선택, 권한, 오류 응답, 테스트까지의 순서와 이 레포의 관례를 담고 있다.
 ---
 
 # API 엔드포인트 추가
@@ -10,14 +10,14 @@ description: interview-backend 에 REST 엔드포인트를 추가하거나 기�
 1. `docs/contract/api-contract.md` 에 그 경로가 있는가?
    - 있다 → 경로·필드명·열거형을 **그대로** 구현한다.
    - 없다 / 모양이 다르다 → 멈추고 `change-api-contract` skill 을 먼저 따른다.
-2. 응답 모양이 계약에 안 적혀 있으면 `docs/open-questions.md` 3장에 이미 정한 모양이 있는지 본다. 새로 정했다면 거기에 적는다.
+2. 응답 모양이 API 명세에 안 적혀 있으면 `docs/open-questions.md` 3장에 이미 정한 모양이 있는지 본다. 새로 정했다면 거기에 적는다.
 3. 주인 패키지를 정한다(`com.interview.<feature>`). 경로의 첫 명사가 아니라 **데이터의 주인**이 기준이다.
    예: `PUT /interviews/{id}/interviewers` 는 `interview`, `GET /interviews/{id}/report` 는 `report`.
 
 ## 1. 만드는 순서
 
 1. **DTO** — 요청은 `@Getter @Setter` + `javax.validation` 애너테이션, 응답은 `@Getter` + 생성자/정적 팩터리.
-   - 필드명은 계약의 camelCase 그대로. null 인 필드도 그대로 내보낸다(`@JsonInclude` 를 붙이지 않는다).
+   - 필드명은 API 명세의 camelCase 그대로. null 인 필드도 그대로 내보낸다(`@JsonInclude` 를 붙이지 않는다).
    - 시각은 `OffsetDateTime`(응답: `Times.toOffset(localDateTime)`, 요청: `Times.toLocal(offsetDateTime)`).
    - 목록은 `ListResponse.of(items)`(`{items}`) 또는 `PageResponse`(`{items,page,size,total}`).
    - 엔티티를 그대로 응답으로 내보내지 않는다.
@@ -31,7 +31,7 @@ description: interview-backend 에 REST 엔드포인트를 추가하거나 기�
    - 202 를 돌려주는 작업 접수: `ResponseEntity.status(HttpStatus.ACCEPTED).body(singletonMap("jobId", id))`
    - 그 밖의 성공은 200, 삭제는 204.
 4. **권한**
-   - 계약 표에 (ADMIN) → 컨트롤러 메서드에 `@PreAuthorize("hasRole('ADMIN')")`
+   - API 명세 표에 (ADMIN) → 컨트롤러 메서드에 `@PreAuthorize("hasRole('ADMIN')")`
    - 특정 면접에 쓰는 동작 → 서비스 첫 줄에 `interviewAccess.requireWritable(interviewId, user)` (배정된 면접관 또는 ADMIN)
    - 조회 → 추가 검사 없음(로그인만)
    - 인증 없이 열어야 하는 경로는 `SecurityConfig` 를 고쳐야 한다. 공용 파일이므로 그 변경만 담은 작은 PR 로 먼저 합친다.
@@ -67,9 +67,9 @@ class MyFeatureTest extends ApiTestSupport {
 
 ## 4. 끝내기 전 체크리스트
 
-- [ ] 경로·메서드·필드명·열거형이 계약과 같다
+- [ ] 경로·메서드·필드명·열거형이 API 명세와 같다
 - [ ] 권한(ADMIN / 배정된 면접관)이 걸려 있고 테스트로 확인했다
 - [ ] 오류가 `{ code, message, details }` 로 나간다(직접 `ResponseEntity` 로 오류를 만들지 않았다)
 - [ ] 엔티티를 바꿨다면 `./gradlew generateOracleSchema` 를 돌렸다
 - [ ] `./gradlew build` 통과
-- [ ] 문서: 계약에 없는 모양을 정했으면 `docs/open-questions.md`, 흐름이 바뀌었으면 `docs/architecture.md`
+- [ ] 문서: API 명세에 없는 모양을 정했으면 `docs/open-questions.md`, 흐름이 바뀌었으면 `docs/architecture.md`

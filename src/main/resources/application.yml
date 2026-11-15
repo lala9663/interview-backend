@@ -100,7 +100,7 @@ app:
     mapping-location: ${EXCEL_MAPPING_LOCATION:classpath:excel-mapping.yml}
     max-rows: 5000
 
-  # 기능 플래그. 덜 끝난 기능은 플래그 뒤에 두고 trunk 에 합친다(AGENTS.md).
+  # 기능 플래그. 덜 끝난 기능은 플래그 뒤에 두고 dev 에 합친다(AGENTS.md).
   features:
     # 자동 매칭 직후 새 면접의 브리핑 작업을 자동으로 접수한다.
     auto-briefing-on-match: true

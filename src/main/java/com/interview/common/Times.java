@@ -8,7 +8,7 @@ import java.time.temporal.ChronoUnit;
 
 /**
  * 시각 변환. DB 에는 업무 시간대(app.time-zone, 기본 Asia/Seoul)의 LocalDateTime(TIMESTAMP)으로 저장하고,
- * API 로 나갈 때 오프셋을 붙인다(계약: ISO-8601 오프셋 포함).
+ * API 로 나갈 때 오프셋을 붙인다(API 명세: ISO-8601 오프셋 포함).
  */
 public final class Times {
 

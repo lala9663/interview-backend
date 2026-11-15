@@ -10,7 +10,7 @@ import com.interview.interview.InterviewAccess;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.8 의 작업 조회. (JD 수정 PUT /jobs/{id} 와 뜻이 섞이지 않게 /ai-jobs 를 쓴다.) */
+/** API 명세 2.8 의 작업 조회. (JD 수정 PUT /jobs/{id} 와 뜻이 섞이지 않게 /ai-jobs 를 쓴다.) */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

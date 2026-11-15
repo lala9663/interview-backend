@@ -53,7 +53,7 @@ public class Briefing {
     @Column(name = "MODEL_NAME", length = 100)
     private String model;
 
-    /** 계약 2.6 의 summary (headline, keyPoints, strengths, checkPoints, timeline). */
+    /** API 명세 2.6 의 summary (headline, keyPoints, strengths, checkPoints, timeline). */
     @Lob
     @Convert(converter = JsonNodeConverter.class)
     @Column(name = "SUMMARY_JSON")

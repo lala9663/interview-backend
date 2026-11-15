@@ -19,7 +19,7 @@ import com.interview.common.web.ListResponse;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.2 채용(공고)과 직무. */
+/** API 명세 2.2 채용(공고)과 직무. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

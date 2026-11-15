@@ -28,7 +28,7 @@ import com.interview.user.UserService;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 자동 매칭(계약 2.4, 흐름 6장 "면접 전" 2단계).
+ * 자동 매칭(API 명세 2.4, 흐름 6장 "면접 전" 2단계).
  * 1) 면접이 하나도 없는 면접자에게 트랙별 기본 면접을 만든다(app.matching.*-plan, 상태 WAITING).
  * 2) 면접관이 없는 면접(끝났거나 취소된 것 제외)에 {@link InterviewerMatcher} 로 면접관을 배정한다.
  * 3) app.features.auto-briefing-on-match 가 켜져 있으면 새로 만든 면접의 브리핑 작업을 접수한다.

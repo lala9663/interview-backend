@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import lombok.Getter;
 
 /**
- * 계약의 오류 응답({ code, message, details })으로 바뀌는 예외.
+ * API 명세의 오류 응답({ code, message, details })으로 바뀌는 예외.
  * 오류 코드는 공용 enum 에 모으지 않고 기능 코드에서 문자열로 직접 쓴다(공용 파일 충돌 방지).
  */
 @Getter

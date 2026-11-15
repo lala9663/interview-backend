@@ -10,7 +10,7 @@ import com.interview.interview.InterviewDto;
 import lombok.Getter;
 import lombok.Setter;
 
-/** GET /admin/operations 응답(계약 2.11). */
+/** GET /admin/operations 응답(API 명세 2.11). */
 public final class OperationsDtos {
 
     public static final String NOT_STARTED = "NOT_STARTED";

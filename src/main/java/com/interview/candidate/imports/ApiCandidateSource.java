@@ -14,8 +14,8 @@ import lombok.Setter;
  * API 입력 경로의 자리 (경력 채용: 외부 채용 시스템이 면접자를 밀어 넣는 경우).
  *
  * 지금 있는 것: API 본문 한 건({@link Payload})을 {@link CandidateRow} 로 바꾸는 변환.
- * 아직 없는 것: 이 변환을 부르는 엔드포인트. 계약(docs/contract/api-contract.md)에 경로가 정해지면
- *   1) 계약 변경 절차를 밟고(.opencode/skills/change-api-contract),
+ * 아직 없는 것: 이 변환을 부르는 엔드포인트. API 명세(docs/contract/api-contract.md)에 경로가 정해지면
+ *   1) API 변경 절차를 밟고(.opencode/skills/change-api-contract),
  *   2) 컨트롤러에서 read() → CandidateImportService.importRows(recruitmentId, sourceType(), rows) 를 부른다.
  *
  * 블라인드: Payload 에는 블라인드 항목 필드를 두지 않는다. 보내는 쪽이 넣어 보내도 역직렬화에서 버려진다.

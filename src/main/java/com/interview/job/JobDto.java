@@ -6,7 +6,7 @@ import com.interview.common.Times;
 
 import lombok.Getter;
 
-/** 계약 2.8 의 Job. */
+/** API 명세 2.8 의 Job. */
 @Getter
 public class JobDto {
 

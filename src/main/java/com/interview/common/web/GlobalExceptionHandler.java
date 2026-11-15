@@ -25,7 +25,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 import com.interview.common.ApiException;
 
-/** 모든 예외를 계약의 오류 응답 모양으로 바꾼다. */
+/** 모든 예외를 API 명세의 오류 응답 모양으로 바꾼다. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

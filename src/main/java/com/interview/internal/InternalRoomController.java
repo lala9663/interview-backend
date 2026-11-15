@@ -19,7 +19,7 @@ import com.interview.room.TranscriptService;
 
 import lombok.RequiredArgsConstructor;
 
-/** Agent → 백엔드 콜백(계약 5장). 인증은 X-Internal-Key ({@link InternalKeyFilter}). */
+/** Agent → 백엔드 콜백(API 명세 5장). 인증은 X-Internal-Key ({@link InternalKeyFilter}). */
 @RestController
 @RequestMapping("/internal/v1/rooms/{roomId}")
 @RequiredArgsConstructor

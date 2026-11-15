@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.4 의 자동 매칭. (수동 지정 PUT /interviews/{id}/interviewers 는 interview 패키지에 있다.) */
+/** API 명세 2.4 의 자동 매칭. (수동 지정 PUT /interviews/{id}/interviewers 는 interview 패키지에 있다.) */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

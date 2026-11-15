@@ -22,7 +22,7 @@ import com.interview.common.web.ListResponse;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.3 면접자 업로드. */
+/** API 명세 2.3 면접자 업로드. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

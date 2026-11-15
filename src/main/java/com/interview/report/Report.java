@@ -57,7 +57,7 @@ public class Report {
     @Column(name = "MODEL_NAME", length = 100)
     private String model;
 
-    /** 계약 4.3 의 ReportContent. */
+    /** API 명세 4.3 의 ReportContent. */
     @Lob
     @Convert(converter = JsonNodeConverter.class)
     @Column(name = "CONTENT_JSON")

@@ -61,7 +61,7 @@ import com.interview.support.ApiTestSupport;
 import com.interview.user.UserAccountRepository;
 
 /**
- * 관리자 집계(계약 2.11). 테스트마다 새 채용을 만들고 작은 고정 데이터를 넣어 계산값을 확인한다.
+ * 관리자 집계(API 명세 2.11). 테스트마다 새 채용을 만들고 작은 고정 데이터를 넣어 계산값을 확인한다.
  *
  * 데이터(면접 4건, 면접관 A=E1002 박준호, B=E1003 이하린, C=E1004 최민재):
  *  I1 EVALUATING  방 ENDED(25분 진행). 전사 4, 꼬리질문 4(채택 1), AI 평가(문제해결 4, 논리 2, 직무지식 점수 없음),

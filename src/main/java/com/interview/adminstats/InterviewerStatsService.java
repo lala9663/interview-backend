@@ -31,7 +31,7 @@ import com.interview.user.UserService;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 면접관 편차(계약 2.11 의 /admin/interviewer-stats).
+ * 면접관 편차(API 명세 2.11 의 /admin/interviewer-stats).
  * 채용 한 건의 면접·배정·제출된 평가를 한 번씩 읽어 자바에서 계산한다(점수가 JSON 이라 DB 에서 집계할 수 없다).
  */
 @Service

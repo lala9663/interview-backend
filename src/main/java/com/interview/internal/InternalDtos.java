@@ -21,7 +21,7 @@ import com.interview.room.UtteranceInput;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Agent → 백엔드 콜백(계약 5장)의 요청·응답. */
+/** Agent → 백엔드 콜백(API 명세 5장)의 요청·응답. */
 public final class InternalDtos {
 
     private InternalDtos() {

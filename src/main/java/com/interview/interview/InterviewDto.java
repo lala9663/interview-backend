@@ -12,7 +12,7 @@ import com.interview.room.RoomStatus;
 import lombok.Getter;
 import lombok.Setter;
 
-/** 계약 2.5 의 Interview. null 인 필드도 그대로 null 로 내보낸다. */
+/** API 명세 2.5 의 Interview. null 인 필드도 그대로 null 로 내보낸다. */
 @Getter
 @Setter
 public class InterviewDto {

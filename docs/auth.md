@@ -40,6 +40,8 @@
 
 ## 4. AD SSO 를 붙일 자리 (ad 프로파일, 미구현)
 
+5주 차에 붙인다(공통 문서 `10-roadmap.md`). 사내에 AD SSO 연동이 일부 구현된 코드가 있으므로 그것을 먼저 읽고 옮긴다(skill `port-legacy-feature`). 붙기 전까지는 임시 로그인으로 개발한다.
+
 지금 있는 것:
 
 - `auth.AuthProvider` — "누구인지 확인"하는 인터페이스.
@@ -51,7 +53,7 @@
 1. 사내 SSO 방식을 확인한다(SAML 2.0 / OIDC / Kerberos(SPNEGO) 중 무엇인지, 콜백 주소 등록 절차, 사번이 담기는 속성 이름).
 2. 방식에 맞는 의존성을 `build.gradle` 에 추가한다(Java 8 · Spring Boot 2.7 호환 버전). 폐쇄망 미러에 있는지 먼저 확인한다.
 3. `SsoLoginController.login()` 에서 SSO 로그인 화면으로 redirect 한다.
-4. 콜백 엔드포인트를 `SsoLoginController` 에 추가한다(예: `GET /api/v1/auth/sso/callback`). `/api/v1/auth/**` 는 이미 인증 없이 열려 있다. **계약에 없는 경로이므로 계약 변경 절차를 밟는다.**
+4. 콜백 엔드포인트를 `SsoLoginController` 에 추가한다(예: `GET /api/v1/auth/sso/callback`). `/api/v1/auth/**` 는 이미 인증 없이 열려 있다. **API 명세에 없는 경로이므로 API 변경 절차를 밟는다.**
 5. `AdSsoAuthProvider.authenticate()` 에서 SSO 응답을 검증하고 사번을 꺼내 `UserAccount` 를 찾는다.
 6. `AuthService.issue(user)` 로 우리 토큰(access/refresh)을 만들어 프론트로 넘긴다. 넘기는 방법(redirect 의 fragment, 일회용 코드 교환 등)은 프론트와 정한다.
 7. 그 뒤의 모든 API 인증은 지금과 같다(JWT). `SecurityConfig`, 필터, 컨트롤러는 고칠 필요가 없다.
@@ -60,8 +62,9 @@
 
 ## 5. 권한
 
-- **ADMIN 전용**: 계약 표에 (ADMIN) 이 붙은 엔드포인트. 컨트롤러 메서드의 `@PreAuthorize("hasRole('ADMIN')")`.
-  채용 등록, 직무 등록·수정, 업로드, 자동 매칭, 면접관 수동 지정, 질문 은행 등록·삭제.
+- **ADMIN 전용**: API 명세 표에 (ADMIN) 이 붙은 엔드포인트. 컨트롤러 메서드의 `@PreAuthorize("hasRole('ADMIN')")`.
+  채용 등록, 직무 등록·수정, 업로드, 자동 매칭, 면접관 수동 지정, 면접 등록(`POST /candidates/{id}/interviews`), 질문 은행 등록·삭제,
+  관리자 집계 세 가지(`/admin/operations`, `/admin/quality`, `/admin/interviewer-stats`).
 - **면접 단위 쓰기**: 그 면접에 배정된 면접관(`IV_INTERVIEW_ASSIGNEE`)과 ADMIN 만. 서비스에서 `InterviewAccess.requireWritable(interviewId, user)`.
   방 생성·시작·종료·입장권, 꼬리질문 채택, 내 평가 저장, 질문 추가·수정, 브리핑 생성, 보고서 재생성, 면접 수정(PATCH),
   그 면접의 질문을 질문 은행에 담기(`POST /question-bank/from-question/{questionId}`).

@@ -2,7 +2,7 @@ package com.interview.question;
 
 import lombok.Getter;
 
-/** 계약 2.6 의 Question. */
+/** API 명세 2.6 의 Question. */
 @Getter
 public class QuestionDto {
 

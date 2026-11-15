@@ -20,7 +20,7 @@ import com.interview.interview.InterviewAccess;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.6 의 질문. */
+/** API 명세 2.6 의 질문. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

@@ -11,7 +11,7 @@ import com.interview.job.JobType;
 import lombok.Getter;
 import lombok.Setter;
 
-/** GET /admin/quality 응답(계약 2.11). 비율·평균은 분모가 0이면 null. */
+/** GET /admin/quality 응답(API 명세 2.11). 비율·평균은 분모가 0이면 null. */
 public final class QualityDtos {
 
     private QualityDtos() {

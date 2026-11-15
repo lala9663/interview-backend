@@ -18,7 +18,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 백엔드 → Agent 내부 API(계약 4장)의 요청·응답 모양.
+ * 백엔드 → Agent 내부 API(API 명세 4장)의 요청·응답 모양.
  * 블라인드 원칙: 여기에는 면접자의 이름·수험번호 필드가 없다. profile 은 블라인드 항목이 빠진 값만 담는다.
  */
 public final class AgentDtos {

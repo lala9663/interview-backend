@@ -8,7 +8,7 @@ import com.interview.common.Times;
 
 import lombok.Getter;
 
-/** 계약 2.3 의 UploadBatch. 이력 목록에서는 errors 를 비워서 보낸다(상세에서 채운다). */
+/** API 명세 2.3 의 UploadBatch. 이력 목록에서는 errors 를 비워서 보낸다(상세에서 채운다). */
 @Getter
 public class UploadBatchDto {
 

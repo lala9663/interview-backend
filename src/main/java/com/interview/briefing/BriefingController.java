@@ -16,7 +16,7 @@ import com.interview.auth.CurrentUser;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.6 의 사전 리포트(브리핑). */
+/** API 명세 2.6 의 사전 리포트(브리핑). */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

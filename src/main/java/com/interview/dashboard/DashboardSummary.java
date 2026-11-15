@@ -10,8 +10,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * GET /dashboard/summary 응답. 계약에는 "수와 목록"이라고만 있어 이 모양으로 정했다(docs/open-questions.md).
- * 목록의 항목은 계약 2.5 의 Interview 와 같다. 목록은 각각 최대 100건.
+ * GET /dashboard/summary 응답. API 명세에는 "수와 목록"이라고만 있어 이 모양으로 정했다(docs/open-questions.md).
+ * 목록의 항목은 API 명세 2.5 의 Interview 와 같다. 목록은 각각 최대 100건.
  */
 @Getter
 @Setter

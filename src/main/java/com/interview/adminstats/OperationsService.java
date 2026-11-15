@@ -39,7 +39,7 @@ import com.interview.room.UtteranceRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 당일 운영 현황판(계약 2.11 의 /admin/operations).
+ * 당일 운영 현황판(API 명세 2.11 의 /admin/operations).
  * 대상: 그 채용의 면접 가운데 예정 시각이 그 날짜인 것 + (날짜가 오늘이면) 지금 진행 중인 것.
  * 면접 수와 무관하게 조회 횟수가 일정하다(면접, 방, 전사 요약, 최근 작업을 묶음 조회).
  */

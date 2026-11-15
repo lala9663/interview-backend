@@ -14,7 +14,7 @@ import com.interview.recruitment.Track;
 import lombok.Getter;
 import lombok.Setter;
 
-/** 계약 2.3 의 면접자 응답 모음. */
+/** API 명세 2.3 의 면접자 응답 모음. */
 public final class CandidateDtos {
 
     private CandidateDtos() {

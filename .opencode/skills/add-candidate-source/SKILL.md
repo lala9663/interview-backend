@@ -57,7 +57,7 @@ description: 면접자 입력 경로를 바꾸거나 늘릴 때 쓴다. 엑셀 �
 
 ## B. 새 입력 경로를 붙인다 (예: 경력 채용을 외부 시스템이 API 로 보냄)
 
-1. **계약부터.** 경로와 본문 모양이 `docs/contract/api-contract.md` 에 없으면 `change-api-contract` 를 먼저 따른다.
+1. **API 명세부터.** 경로와 본문 모양이 `docs/contract/api-contract.md` 에 없으면 `change-api-contract` 를 먼저 따른다.
    누가 부르는지에 따라 위치가 다르다: 사람(프론트)이면 `/api/v1`(JWT, ADMIN), 다른 시스템이면 `/internal/v1`(`X-Internal-Key`) 또는 별도 인증.
 2. **CandidateSource 구현.**
    - API 본문이면 `ApiCandidateSource` 를 그대로 쓰거나 고친다. `Payload` 가 받는 모양이다.

@@ -9,7 +9,7 @@ import com.interview.job.JobStatus;
 import lombok.Getter;
 
 /**
- * 계약 2.8 의 Report.
+ * API 명세 2.8 의 Report.
  * 보고서가 아직 없으면 version·content 등은 null 이고 status 는 가장 최근 보고서 작업의 상태(없으면 null)다.
  */
 @Getter

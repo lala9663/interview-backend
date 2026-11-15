@@ -17,7 +17,7 @@ import com.interview.question.QuestionDto;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.7 면접 방. */
+/** API 명세 2.7 면접 방. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

@@ -6,7 +6,7 @@ import com.interview.common.Times;
 
 import lombok.Getter;
 
-/** 계약 2.7 의 방 관련 응답. */
+/** API 명세 2.7 의 방 관련 응답. */
 public final class RoomDtos {
 
     private RoomDtos() {

@@ -18,7 +18,7 @@
 | 10 | 면접은 배정된 면접관이 **모두** 평가를 제출하면 DONE. 보고서 완료 여부와는 무관 | `EvaluationService.completeIfAllSubmitted` |
 | 11 | 제출한 평가도 다시 고칠 수 있다(잠그지 않는다) | `EvaluationService.saveMine` |
 | 12 | 조회는 로그인한 사용자 모두에게 열려 있다(면접관이 배정되지 않은 면접자·보고서도 볼 수 있다) | `InterviewAccess` 에 조회용 검사를 추가하고 각 서비스의 조회에서 부른다 |
-| 13 | 면접 등록(`POST /candidates/{id}/interviews`)은 ADMIN 만 가능(계약에 반영됨) | `InterviewController.create` 의 `@PreAuthorize` |
+| 13 | 면접 등록(`POST /candidates/{id}/interviews`)은 ADMIN 만 가능(API 명세에 반영됨) | `InterviewController.create` 의 `@PreAuthorize` |
 | 14 | 대시보드는 ADMIN 은 전체, 면접관은 자기 면접만 | `DashboardService` |
 | 15 | 음성은 백엔드에 저장하지 않는다(전사만). 전사·보고서의 보관 기간과 삭제 절차는 없다 | 새 기능 |
 
@@ -27,7 +27,7 @@
 | # | 가정 | 바꿀 위치 |
 | --- | --- | --- |
 | 16 | AD SSO 방식(SAML / OIDC / Kerberos)을 모른다. 처음 로그인한 사번을 자동 등록할지, 역할·담당 직무를 어디서 받을지도 미정 | `AdSsoAuthProvider`, `SsoLoginController` ([auth.md](auth.md)) |
-| 17 | dev/prod 에 사용자·평가 항목·채용 같은 기준 데이터를 넣는 수단이 없다(local 시드뿐). 채용·직무·질문 은행은 API 로 넣을 수 있지만 사용자와 평가 항목은 API 가 없다 | 관리 API(계약 변경) 또는 초기 데이터 SQL |
+| 17 | dev/prod 에 사용자·평가 항목·채용 같은 기준 데이터를 넣는 수단이 없다(local 시드뿐). 채용·직무·질문 은행은 API 로 넣을 수 있지만 사용자와 평가 항목은 API 가 없다 | 관리 API(API 변경) 또는 초기 데이터 SQL |
 | 18 | Oracle 은 12c 이상(`fetch first` 문법). 실제 Oracle 에서 실행해 보지 못했다 | `application-dev.yml` 의 `database-platform` ([database.md](database.md)) |
 | 19 | Redis 는 Sentinel 구성, refresh 토큰 저장에만 쓴다. 실제 Redis 에서 실행해 보지 못했다 | `RedisTokenStore`, `application-dev.yml` |
 | 20 | 스키마 변경은 `schema.sql` 의 차이를 손으로 ALTER 문으로 옮긴다. Flyway 등은 쓰지 않는다 | [database.md](database.md) 3장 |
@@ -39,9 +39,9 @@
 | 26 | 보정본이 온 뒤에 늦게 도착한 실시간 전사는 버린다 | `TranscriptService.saveLive` |
 | 27 | 경력 면접자를 API 로 받는 경로는 변환(`ApiCandidateSource`)만 있고 엔드포인트가 없다 | `.opencode/skills/add-candidate-source` |
 
-## 3. 계약에 모양이 없어 이 레포가 정한 것
+## 3. API 명세에 모양이 없어 이 레포가 정한 것
 
-처음 계약이 정하지 않아 이 레포가 정한 모양이다. **계약 2.10 "응답 모양 보충"에 반영됐다.** 바꿀 때는 계약 변경 절차를 따른다.
+처음 API 명세가 정하지 않아 이 레포가 정한 모양이다. **API 명세 2.10 "응답 모양 보충"에 반영됐다.** 바꿀 때는 API 변경 절차를 따른다. 다만 업로드·공통 오류 코드 가운데 `FILE_EMPTY`, `HEADER_MISSING`, `FILE_TOO_MANY_ROWS`, `FILE_TOO_LARGE`, `METHOD_NOT_ALLOWED`, `INTERNAL_ERROR`는 아직 API 명세에 없고 이 문서와 `excel-upload.md`에만 있다.
 
 | 항목 | 정한 모양 |
 | --- | --- |
@@ -58,20 +58,20 @@
 | `GET /interviews/{id}/ai-evaluation` (없음) | `status` 는 가장 최근 작업의 상태(없으면 null), `scores` 는 빈 배열 |
 | `GET /interviews/{id}/report/versions` | 최신 버전이 먼저. 항목은 Report 전체(content 포함) |
 | `GET /uploads/template` | 가짜 50행 샘플. `?empty=true` 면 헤더만 |
-| UploadBatch 의 `errors[]` | 계약의 필드에 `code` 를 더했다. 이력 목록(`GET /recruitments/{id}/uploads`)에서는 `errors` 가 빈 배열이다 |
-| 면접자 목록의 `status` 파라미터 | "지금 차수" 면접의 `InterviewStatus` |
-| 면접자 목록의 `interviewers`, `briefingStatus` | "지금 차수" 면접의 것 |
-| "지금 차수" | 끝나지 않은(DONE·CANCELED 아닌) 첫 면접. 모두 끝났으면 마지막으로 끝난 면접 |
+| UploadBatch 의 `errors[]` | API 명세의 필드에 `code` 를 더했다. 이력 목록(`GET /recruitments/{id}/uploads`)에서는 `errors` 가 빈 배열이다 |
+| 면접자 목록의 `status`, `type` 파라미터 | "지금 차수" 면접의 `InterviewStatus`, `InterviewType` |
+| 면접자 목록의 `interviewers`, `briefingStatus`, `currentStage` | "지금 차수" 면접의 것 |
+| "지금 차수" | 끝나지 않은(DONE·CANCELED 아닌) 첫 면접. 모두 끝났으면 마지막으로 완료된(DONE) 면접(취소된 면접은 세지 않고, 모두 취소면 없음) |
 | Interview 의 `reportStatus` | 가장 최근 보고서 작업의 상태 |
-| 생성 응답의 HTTP 코드 | 계약이 202 로 정한 것 외에는 모두 200. 삭제는 204 |
+| 생성 응답의 HTTP 코드 | API 명세가 202 로 정한 것 외에는 모두 200. 삭제는 204 |
 | Agent 콜백의 응답 본문 | utterances·follow-ups `{ saved }`, refined-transcript `{ saved, jobId }`, events `{ ok }` |
 | 추가 오류 코드 | `ROOM_NOT_LIVE`, `ROOM_ALREADY_ENDED`, `INTERVIEW_CANCELED`, `JOB_ALREADY_EXISTS`(직무 코드 중복), `SSO_NOT_IMPLEMENTED`(501), `METHOD_NOT_ALLOWED`(405), `INTERNAL_ERROR`(500), 업로드 오류 코드([excel-upload.md](excel-upload.md)) |
 
-## 4. 계약에 반영된 것
+## 4. API 명세에 반영된 것
 
 - AI 작업 조회 경로는 `GET /ai-jobs/{jobId}` 다. JD 수정(`PUT /jobs/{id}`)과 `{id}` 의 뜻이 섞이지 않게 나눴다.
 
-## 5. 관리자 집계(계약 2.11)에서 가정한 것
+## 5. 관리자 집계(API 명세 2.11)에서 가정한 것
 
 | # | 가정 | 바꿀 위치 |
 | --- | --- | --- |
@@ -86,6 +86,6 @@
 | 36 | 보고서 소요 시간은 방 종료 → 그 면접의 첫 LIVE / 첫 REFINED 보고서. 다시 만든 보고서는 세지 않는다 | `ReportRepository.firstGeneratedOfRecruitment` |
 | 37 | 면접관 편차의 대상은 배정이 있거나 제출한 평가가 있는 사용자. `assignedCount` 는 취소된 면접을 뺀다. `pendingCount` 는 EVALUATING·DONE 인 배정 가운데 미제출 | `InterviewerStatsService` |
 | 38 | `deviationFromPeers` 의 "다른 면접관들의 평균"은 면접관별 그 면접 평균의 평균. `scoreDistribution` 의 키는 1~최대 점수(반올림한 정수) | `InterviewerStatsService` |
-| 39 | 비율도 소수 둘째 자리로 반올림한다(계약의 예시와 같다). 아주 작은 비율은 0.0 으로 보일 수 있다 | `StatMath.rate` |
+| 39 | 비율도 소수 둘째 자리로 반올림한다(API 명세의 예시와 같다). 아주 작은 비율은 0.0 으로 보일 수 있다 | `StatMath.rate` |
 | 40 | 집계 성능: 채용 한 건에 면접 1,000건·발화 수만 건을 가정했다. 호출마다 다시 계산하고 캐시는 없다. 점수 비교는 평가 행(면접 수 × 면접관 수)을 메모리로 읽는다. 실제 Oracle 에서의 실행 계획은 확인하지 못했다(`IV_UTTERANCE.MATCHED_QUESTION_ID` 에는 인덱스가 없다) | 느리면 짧은 캐시 또는 집계 테이블 |
 | 41 | 시드의 진행 중 면접 두 건은 서버를 처음 띄운 시각 기준으로 만들어진다. 시간이 지나면 초과·무전사 시간이 계속 늘어난다 | `LocalSeedRunner` (`data/` 를 지우면 다시 만들어진다) |

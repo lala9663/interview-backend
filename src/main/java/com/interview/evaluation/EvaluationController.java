@@ -15,7 +15,7 @@ import com.interview.common.web.ListResponse;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.8 의 평가. */
+/** API 명세 2.8 의 평가. */
 @RestController
 @RequestMapping("/api/v1/interviews/{id}")
 @RequiredArgsConstructor

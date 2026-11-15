@@ -11,7 +11,7 @@ AI(요약, 질문, STT, 채점, 보고서)는 별도 서비스인 Agent 가 하�
 ```
 
 - 스택: Java 8, Spring Boot 2.7.5, Gradle 7.5.1, Spring Data JPA, Oracle, Redis(Sentinel), JWT(jjwt), Apache POI
-- API 계약: [docs/contract/api-contract.md](docs/contract/api-contract.md) (세 레포 공통 문서의 복사본)
+- API 명세: [docs/contract/api-contract.md](docs/contract/api-contract.md) (세 레포 공통 문서의 복사본)
 - AI 코딩 도구(OpenCode)용 규칙: [AGENTS.md](AGENTS.md), 작업 절차: `.opencode/skills/`
 
 ## 빠른 시작 (local)
@@ -102,6 +102,7 @@ src/main/java/com/interview/
   agent/          Agent 클라이언트(HTTP / Fake)
   internal/       Agent 콜백(/internal/v1), X-Internal-Key 필터
   dashboard/      대시보드 집계
+  adminstats/     관리자 집계(운영 현황, AI 품질, 면접관 편차). 읽기 전용
   seed/           local 시드 데이터
 src/main/resources/
   application*.yml      프로파일별 설정
@@ -110,9 +111,11 @@ src/test/java/com/interview/
   CoreFlowIntegrationTest   핵심 흐름 전체
   BlindFieldTest            블라인드 항목 누출 검사
   SecurityAndUploadErrorTest, agent/HttpAgentClientTest, tools/OracleSchemaTest
+  adminstats/AdminStatsTest  관리자 집계 세 가지
+  support/ApiTestSupport     테스트 공용 도우미(로그인, 호출, 대기)
   tools/OracleSchemaGenerator  Oracle DDL 생성기
 db/oracle/schema.sql    Oracle DDL (자동 생성)
-docs/                   설계·설정 문서, 계약 복사본
+docs/                   설계·설정 문서, API 명세 복사본
 .opencode/skills/       OpenCode 작업 절차
 ```
 

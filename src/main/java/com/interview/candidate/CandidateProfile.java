@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 계약 2.3 의 profile. 블라인드 항목이 이미 빠진 값만 담는다(성별·생년월일·가족 등은 필드 자체가 없다).
+ * API 명세 2.3 의 profile. 블라인드 항목이 이미 빠진 값만 담는다(성별·생년월일·가족 등은 필드 자체가 없다).
  * IV_CANDIDATE.PROFILE_JSON(CLOB)에 JSON 문자열로 저장된다.
  */
 @Data

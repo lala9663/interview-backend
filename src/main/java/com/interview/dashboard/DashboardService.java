@@ -82,8 +82,12 @@ public class DashboardService {
                 pendingReports.add(dto);
             }
         }
-        summary.setPendingReports(pendingReports);
+        // 건수는 찾은 만큼, 목록은 API 명세대로 최대 LIMIT 건(EVALUATING 과 DONE 을 합치면 넘을 수 있다).
         summary.setPendingReportCount(pendingReports.size());
+        if (pendingReports.size() > LIMIT) {
+            pendingReports = new ArrayList<InterviewDto>(pendingReports.subList(0, LIMIT));
+        }
+        summary.setPendingReports(pendingReports);
         return summary;
     }
 }

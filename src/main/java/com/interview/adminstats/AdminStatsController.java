@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.11 관리자 집계. 읽기 전용이고 ADMIN 만 부를 수 있다. recruitmentId 는 필수(없으면 400). */
+/** API 명세 2.11 관리자 집계. 읽기 전용이고 ADMIN 만 부를 수 있다. recruitmentId 는 필수(없으면 400). */
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor

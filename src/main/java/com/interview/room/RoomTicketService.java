@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * 방 입장권(JWT, HS256, 기본 5분). 비밀키(ROOM_TICKET_SECRET)는 Agent 와 공유한다.
- * 클레임: sub(사용자 id), name, roomId, audio(boolean), exp — 계약 2.7.
+ * 클레임: sub(사용자 id), name, roomId, audio(boolean), exp — API 명세 2.7.
  */
 @Service
 @RequiredArgsConstructor

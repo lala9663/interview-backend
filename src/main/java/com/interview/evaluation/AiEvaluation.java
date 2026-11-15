@@ -43,7 +43,7 @@ public class AiEvaluation {
     @Column(name = "GENERATED_AT")
     private LocalDateTime generatedAt;
 
-    /** [ { criterionCode, criterionName, score, maxScore, rationale, evidenceSeqs } ] — 계약 2.8 의 scores 모양 그대로. */
+    /** [ { criterionCode, criterionName, score, maxScore, rationale, evidenceSeqs } ] — API 명세 2.8 의 scores 모양 그대로. */
     @Lob
     @Convert(converter = JsonNodeConverter.class)
     @Column(name = "SCORES_JSON")

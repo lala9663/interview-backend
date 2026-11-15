@@ -22,7 +22,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 /**
- * 핵심 흐름을 처음부터 끝까지 한 번에 검증한다(계약 6장):
+ * 핵심 흐름을 처음부터 끝까지 한 번에 검증한다(API 명세 6장):
  * 로그인 → 업로드(성공·오류 행) → 자동 매칭 → 브리핑 작업(Fake Agent) → 방 생성/시작/입장권
  * → 내부 콜백으로 전사 저장 → 종료 → AI 평가·보고서(LIVE) → refined 콜백 → 보고서 v2(REFINED) → 평가 제출 → DONE
  */

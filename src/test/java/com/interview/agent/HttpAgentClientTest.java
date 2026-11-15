@@ -28,7 +28,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-/** HttpAgentClient 가 계약 4장대로 부르는지(경로, X-Internal-Key, 본문 모양, 오류 변환)를 가짜 HTTP 서버로 확인한다. */
+/** HttpAgentClient 가 API 명세 4장대로 부르는지(경로, X-Internal-Key, 본문 모양, 오류 변환)를 가짜 HTTP 서버로 확인한다. */
 class HttpAgentClientTest {
 
     private HttpServer server;

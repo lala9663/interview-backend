@@ -4,7 +4,7 @@ import com.interview.user.UserDto;
 
 import lombok.Getter;
 
-/** 계약 2.1 의 토큰 응답. */
+/** API 명세 2.1 의 토큰 응답. */
 @Getter
 public class TokenResponse {
 

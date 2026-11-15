@@ -22,7 +22,7 @@ import com.interview.common.web.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.5 면접, 2.4 의 수동 지정. */
+/** API 명세 2.5 면접, 2.4 의 수동 지정. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

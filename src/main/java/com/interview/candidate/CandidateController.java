@@ -13,7 +13,7 @@ import com.interview.recruitment.RecruitmentService;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.3 면접자 목록·상세·진행. */
+/** API 명세 2.3 면접자 목록·상세·진행. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

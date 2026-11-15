@@ -14,7 +14,7 @@ import com.interview.job.JobStatus;
 import lombok.Getter;
 import lombok.Setter;
 
-/** 계약 2.8 의 평가 관련 요청·응답. */
+/** API 명세 2.8 의 평가 관련 요청·응답. */
 public final class EvaluationDtos {
 
     private EvaluationDtos() {

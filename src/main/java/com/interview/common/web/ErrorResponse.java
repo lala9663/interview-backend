@@ -5,7 +5,7 @@ import java.util.Map;
 
 import lombok.Getter;
 
-/** 계약 1장의 공통 오류 응답. */
+/** API 명세 1장의 공통 오류 응답. */
 @Getter
 public class ErrorResponse {
 

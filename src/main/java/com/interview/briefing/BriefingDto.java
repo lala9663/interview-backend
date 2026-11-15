@@ -10,7 +10,7 @@ import com.interview.job.JobStatus;
 
 import lombok.Getter;
 
-/** 계약 2.6 의 Briefing. 아직 없으면 status 가 null 이다. */
+/** API 명세 2.6 의 Briefing. 아직 없으면 status 가 null 이다. */
 @Getter
 public class BriefingDto {
 

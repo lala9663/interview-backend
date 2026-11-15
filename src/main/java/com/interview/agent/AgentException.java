@@ -2,7 +2,7 @@ package com.interview.agent;
 
 import lombok.Getter;
 
-/** Agent 호출 실패. code 는 계약의 AGENT_UNAVAILABLE(연결·시간 초과) 또는 MODEL_FAILED(Agent 가 오류 응답). */
+/** Agent 호출 실패. code 는 API 명세의 AGENT_UNAVAILABLE(연결·시간 초과) 또는 MODEL_FAILED(Agent 가 오류 응답). */
 @Getter
 public class AgentException extends RuntimeException {
 

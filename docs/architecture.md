@@ -10,7 +10,7 @@
 
 기능 단위 패키지다. 한 패키지에 그 기능의 controller / service / repository / entity / dto 가 모두 있다.
 
-| 패키지 | 주요 클래스 | 계약 |
+| 패키지 | 주요 클래스 | API 명세 |
 | --- | --- | --- |
 | `common` | `ApiException`, `GlobalExceptionHandler`, `PageResponse`, `ListResponse`, `Times`, `Chunks`, `JsonNodeConverter`, `H2OracleModeDialect`, `HealthController` | 1, 2.9 |
 | `auth` | `SecurityConfig`, `JwtTokenService`, `AuthService`, `TokenStore`, `AuthProvider`, `SecretsGuard` | 2.1 |
@@ -117,8 +117,8 @@ PUT /interviews/{id}/my-evaluation { submitted: true }
 | --- | --- | --- |
 | `/api/v1/health`, `/api/v1/auth/**` | 인증 없음 | `SecurityConfig` |
 | 그 밖의 `/api/v1/**` | access 토큰(JWT) | `JwtAuthenticationFilter` |
-| 계약 표의 (ADMIN) | ADMIN 만 | 컨트롤러의 `@PreAuthorize("hasRole('ADMIN')")` |
-| 방·평가·질문·브리핑 생성·보고서 재생성·면접 수정 | 그 면접에 배정된 면접관 또는 ADMIN | `InterviewAccess.requireWritable` |
+| API 명세 표의 (ADMIN) | ADMIN 만 | 컨트롤러의 `@PreAuthorize("hasRole('ADMIN')")` |
+| 방·꼬리질문 채택·평가·질문·브리핑 생성·보고서 재생성·면접 수정·질문을 은행에 담기 | 그 면접에 배정된 면접관 또는 ADMIN | `InterviewAccess.requireWritable` |
 | 조회(GET) | 로그인한 사용자 모두 | - |
 | `/internal/v1/**` | `X-Internal-Key` | `InternalKeyFilter` |
 
@@ -132,7 +132,7 @@ PUT /interviews/{id}/my-evaluation { submitted: true }
 
 ## 8. 관리자 집계 (adminstats)
 
-계약 2.11 의 세 엔드포인트(`/admin/operations`, `/admin/quality`, `/admin/interviewer-stats`). ADMIN 전용, 읽기 전용이고 테이블을 새로 만들지 않는다.
+API 명세 2.11 의 세 엔드포인트(`/admin/operations`, `/admin/quality`, `/admin/interviewer-stats`). ADMIN 전용, 읽기 전용이고 테이블을 새로 만들지 않는다.
 
 - **조회 방식**: 면접 수와 무관하게 조회 횟수가 일정하다. 건수(전사, 꼬리질문, 질문, 작업, 보고서 시각)는 각 기능 repository 의 JPQL 집계(`count`, `group by`, `min`/`max`)로 가져오고, 채용 범위는 서브쿼리(`interviewId in (select i.id from Interview i where i.recruitmentId = :rid)`)로 건다. 발화를 엔티티로 읽지 않는다.
 - **자바에서 계산하는 것**: 점수는 JSON(CLOB)에 들어 있어 DB 에서 집계할 수 없다. AI 평가와 제출된 면접관 평가 행을 한 번씩 읽어 계산한다(`ScoreJson`, `StatMath`).

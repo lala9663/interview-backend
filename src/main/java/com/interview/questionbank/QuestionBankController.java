@@ -22,7 +22,7 @@ import com.interview.common.web.ListResponse;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.9 질문 은행. */
+/** API 명세 2.9 질문 은행. */
 @RestController
 @RequestMapping("/api/v1/question-bank")
 @RequiredArgsConstructor

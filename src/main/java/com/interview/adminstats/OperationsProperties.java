@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import lombok.Getter;
 import lombok.Setter;
 
-/** app.operations.* — 운영 현황판의 주의(alerts) 기준. 계약 2.11 의 표와 같은 기본값이다. */
+/** app.operations.* — 운영 현황판의 주의(alerts) 기준. API 명세 2.11 의 표와 같은 기본값이다. */
 @ConfigurationProperties(prefix = "app.operations")
 @Getter
 @Setter

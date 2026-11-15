@@ -16,7 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** 채용에 딸린 직무와 JD. (계약의 /recruitments/{id}/jobs, PUT /jobs/{id}) */
+/** 채용에 딸린 직무와 JD. (API 명세의 /recruitments/{id}/jobs, PUT /jobs/{id}) */
 @Entity
 @Table(name = "IV_JOB_POSTING", uniqueConstraints = @UniqueConstraint(name = "UK_IV_JOB_POSTING_CODE", columnNames = {
         "RECRUITMENT_ID", "JOB_CODE" }))

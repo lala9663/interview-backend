@@ -22,7 +22,7 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 - **엔티티 사이에 `@ManyToOne` 등 연관을 걸지 않는다.** 다른 엔티티는 `Long xxxId` 로만 가리킨다(기능 패키지 간 결합과 지연 로딩 문제를 피한다).
 - JSON 모양 데이터(profile, summary, content, scores)는 `@Lob @Convert(converter = JsonNodeConverter.class)` 로 CLOB 에 저장한다.
 - **블라인드 항목(성별, 생년월일, 가족, 주소 등)을 저장·응답·Agent 요청에 넣지 않는다.** Agent 로 가는 DTO(`agent/dto/AgentDtos`)와 방 context 에 면접자 이름·수험번호를 넣지 않는다. 바꿨으면 `BlindFieldTest` 를 돌린다.
-- 계약(`docs/contract/api-contract.md`)의 경로·필드명·열거형을 임의로 바꾸지 않는다(6장 절차).
+- API 명세(`docs/contract/api-contract.md`)의 경로·필드명·열거형을 임의로 바꾸지 않는다(6장 절차).
 - 공용 파일에 기능별 내용을 쌓지 않는다: 거대한 enum 모음, 오류 코드 모음, 공용 설정 클래스를 만들지 않는다.
 - 실제 사람의 정보, 사내 주소·비밀키를 코드·테스트·문서에 넣지 않는다. 시드와 샘플은 가짜 데이터만.
 - git commit/push 는 사람이 요청했을 때만 한다.
@@ -64,7 +64,7 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 
 ## 5. 기능을 추가하는 순서
 
-1. 계약을 확인한다. 계약에 없는 API 면 먼저 6장 절차.
+1. API 명세를 확인한다. API 명세에 없는 API 면 먼저 6장 절차.
 2. 주인 패키지를 정한다(없으면 새 패키지). 엔티티 → repository → service → dto → controller 순으로 만든다.
 3. 엔티티를 만들거나 바꿨으면 `./gradlew generateOracleSchema` 로 `db/oracle/schema.sql` 을 다시 만든다.
 4. 권한을 건다: ADMIN 전용은 컨트롤러에 `@PreAuthorize("hasRole('ADMIN')")`, 면접 단위 쓰기는 서비스 첫 줄에 `interviewAccess.requireWritable(interviewId, user)`.
@@ -75,12 +75,12 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 
 자세한 절차는 `.opencode/skills/` 에 있다: `add-api-endpoint`, `add-entity-and-migration`, `change-api-contract`, `add-candidate-source`, `port-legacy-feature`.
 
-## 6. 계약 변경 절차
+## 6. API 변경 절차
 
 - 원본은 세 레포 공통 문서(`docs/03-api-contract.md`)이고, 이 레포의 `docs/contract/api-contract.md` 는 복사본이다.
-- 계약을 바꿔야 하면: **코드부터 고치지 않는다.** 변경안(무엇을, 왜, 어느 레포가 영향받는지)을 적어 세 레포 담당자가 합의 → 원본 수정 → 세 레포의 복사본을 같은 날 갱신 → 그다음 코드.
+- API 명세를 바꿔야 하면: **코드부터 고치지 않는다.** 변경안(무엇을, 왜, 어느 레포가 영향받는지)을 적어 세 레포 담당자가 합의 → 원본 수정 → 세 레포의 복사본을 같은 날 갱신 → 그다음 코드.
 - 필드 **추가**는 하위 호환이다(먼저 백엔드가 내보내고 프론트가 나중에 쓴다). 이름 변경·삭제·의미 변경은 호환이 깨지므로 새 필드를 추가하고 옛 필드를 한동안 함께 둔다.
-- 계약에 모양이 안 적힌 응답(예: 대시보드, 자동 매칭 결과)은 `docs/open-questions.md` 에 적어 둔 모양을 따른다.
+- API 명세에 모양이 안 적힌 응답(예: 대시보드, 자동 매칭 결과)은 `docs/open-questions.md` 에 적어 둔 모양을 따른다.
 
 ## 7. 명령어
 
@@ -101,9 +101,10 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 - 작업 브랜치는 `dev`에서 따서 하루 이틀 안에 PR로 `dev`에 합친다(스쿼시 병합: 작업 하나가 커밋 하나로 남는다). 오래 사는 작업 브랜치를 두지 않는다.
 - `main`에는 직접 커밋하지 않는다. 화요일에 병합 담당이 세 서비스를 함께 띄워 확인한 뒤 `dev`를 `main`으로 올리고(일반 병합) 태그를 붙인다(예: `2026-w47`). 세 레포는 같은 날 같은 태그로 올린다.
 - `dev`는 항상 빌드되고 테스트가 통과해야 한다. 깨졌으면 새 작업보다 복구가 먼저다.
-- PR 은 작게(대략 300줄 이내, 한 가지 목적). PR 에 `./gradlew build` 결과를 붙인다.
-- 커밋 메시지(= PR 제목)는 `<영역>: <무엇을 왜>` 한 줄, 한국어. 예: `speaker: 되묻기 구간 규칙 추가`. 영역은 기능 폴더나 패키지 이름이다. 계약을 바꾸면 앞에 `[계약 변경]`을 붙인다. `dev`에는 스쿼시로 합치므로 PR 제목이 그대로 커밋 한 줄이 된다.
-- 리뷰는 1명, 영역이 다른 사람이 본다. 계약을 바꾸는 PR은 세 명 모두 확인한다.
+- 작업 브랜치 이름은 `feat/<짧은-설명>`, `fix/<짧은-설명>`.
+- PR은 작게 올린다(리뷰하는 사람이 15분 안에 읽을 크기, 한 가지 목적). 대략 300줄 이내다. PR 에 `./gradlew build` 결과를 붙인다.
+- 커밋 메시지(= PR 제목)는 `<영역>: <무엇을 왜>` 한 줄, 한국어. 예: `speaker: 되묻기 구간 규칙 추가`. 영역은 기능 폴더나 패키지 이름이다. API 명세를 바꾸면 앞에 `[API 변경]`을 붙인다. `dev`에는 스쿼시로 합치므로 PR 제목이 그대로 커밋 한 줄이 된다.
+- 리뷰는 1명, 영역이 다른 사람이 본다. API 명세를 바꾸는 PR은 세 명 모두 확인한다.
 - 덜 끝난 기능은 **기능 플래그** 뒤에 두고 합친다: `application.yml` 의 `app.features.<이름>: false` → 코드에서 `@Value("${app.features.<이름>:false}")` 또는 `@ConditionalOnProperty`. 끝나면 플래그를 지운다.
 - **공용 파일 수정을 최소화한다.** 충돌이 잦은 파일: `application.yml`, `build.gradle`, `SecurityConfig`, `LocalSeedRunner`, `excel-mapping.yml`, `db/oracle/schema.sql`, `AGENTS.md`.
   - 이 파일들은 다른 변경과 섞지 말고 **작은 PR 로 먼저** 합친다.
@@ -121,14 +122,14 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 
 - **백엔드가 기록의 주인이다.** Agent 는 DB 에 닿지 않는다. Agent 가 저장할 것은 내부 API 로 백엔드에 보낸다.
 - **AI 로직은 여기에 두지 않는다.** 프롬프트, 모델 호출, 유사도 계산, 텍스트 분석은 Agent 몫이다. 여기에는 저장·권한·업무 규칙만 둔다.
-- Agent 없이 개발할 때는 `FakeAgentClient` 를 쓴다. 계약 4장의 요청·응답 모양이 바뀌면 `AgentDtos`, `FakeAgentClient`, `HttpAgentClientTest` 를 함께 고친다.
+- Agent 없이 개발할 때는 `FakeAgentClient` 를 쓴다. API 명세 4장의 요청·응답 모양이 바뀌면 `AgentDtos`, `FakeAgentClient`, `HttpAgentClientTest` 를 함께 고친다.
 
 ## 10. 문서 위치
 
 | 문서 | 내용 |
 | --- | --- |
 | `README.md` | 개요, 빠른 시작, 환경변수 |
-| `docs/contract/api-contract.md` | API 계약(복사본) |
+| `docs/contract/api-contract.md` | API 명세(복사본) |
 | `docs/architecture.md` | 패키지, 흐름, 교체 지점 |
 | `docs/setup.md` | 설치·실행, 폐쇄망 설정 |
 | `docs/database.md` | 테이블, Oracle 전환, Redis Sentinel |

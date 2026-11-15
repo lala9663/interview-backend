@@ -10,7 +10,7 @@ import com.interview.auth.CurrentUser;
 
 import lombok.RequiredArgsConstructor;
 
-/** 계약 2.9 의 대시보드. */
+/** API 명세 2.9 의 대시보드. */
 @RestController
 @RequestMapping("/api/v1/dashboard")
 @RequiredArgsConstructor

@@ -63,7 +63,7 @@ columns:
 | 자소서 문항이 늘어남 | `- { header: 자기소개서4, field: essay, title: 문항 제목 }` 추가 |
 | 블라인드 항목이 늘어남 | `- { header: 병역, blind: true, blindKey: military }` 추가 |
 | 새 항목을 저장 | `- { header: 봉사활동, field: extra.volunteer }` 추가 |
-| profile 에 새 구조(목록·객체)가 필요 | `CandidateProfile` 에 필드 추가 + `ExcelCandidateSource.toRow` 에 분기 추가 + 계약 변경 절차 |
+| profile 에 새 구조(목록·객체)가 필요 | `CandidateProfile` 에 필드 추가 + `ExcelCandidateSource.toRow` 에 분기 추가 + API 변경 절차 |
 
 고친 뒤에는 `./gradlew test` 를 돌린다. 매핑이 잘못되면(헤더 누락, blind 인데 field 가 있음, 필수 3개 중 하나가 없음, 모르는 키) 서버가 시작할 때 오류로 알려 준다.
 
@@ -98,7 +98,7 @@ columns:
 | `DUPLICATE_IN_FILE` | 수험번호 | 같은 파일 안에서 앞의 행과 수험번호가 같다(뒤의 행이 오류) |
 
 `errors[]` 의 항목: `{ rowNumber, column, value, code, message }`. `rowNumber` 는 엑셀 시트의 행 번호(헤더가 1행이면 첫 데이터는 2행)다.
-`code` 는 계약의 예시에 없는 추가 필드다.
+`code` 는 API 명세의 예시에 없는 추가 필드다.
 
 같은 채용에 **이미 있는 수험번호**는 오류가 아니다. 새로 만들지 않고 그 면접자를 갱신한다(이름, 직무, profile, blindedFields). 면접·평가는 그대로 남는다.
 
@@ -114,9 +114,9 @@ DRM 이 풀린 파일이 들어온다고 가정한다. 백엔드는 DRM 을 풀�
 - 기본: **가짜 면접자 50행.** 헤더는 매핑 파일의 순서대로. 블라인드 컬럼에도 가짜 값을 채워 두어, 올리면 버려지는 것을 확인할 수 있다.
 - 일부러 넣은 오류 행 3개: 16행(성명 없음), 29행(직무 코드 `XX`), 42행(수험번호 중복). 올리면 `totalRows 50, successRows 47, failedRows 3`.
 - 직무 코드는 local 시드의 신입 공채(SW, HW, AI, MGMT)에 맞춰져 있다.
-- `?empty=true` 를 붙이면 헤더만 있는 빈 양식을 준다(계약에 없는 추가 파라미터).
+- `?empty=true` 를 붙이면 헤더만 있는 빈 양식을 준다(API 명세에 없는 추가 파라미터).
 
 ## 7. API 입력(경력용)은 자리만 있다
 
-`candidate.imports.ApiCandidateSource` 가 API 본문을 `CandidateRow` 로 바꾸는 변환만 한다. 이것을 부르는 엔드포인트는 계약에 경로가 없어 만들지 않았다.
+`candidate.imports.ApiCandidateSource` 가 API 본문을 `CandidateRow` 로 바꾸는 변환만 한다. 이것을 부르는 엔드포인트는 API 명세에 경로가 없어 만들지 않았다.
 붙이는 법은 `.opencode/skills/add-candidate-source/SKILL.md` 를 본다. 엑셀이든 API 든 검증·저장은 같은 `CandidateImportService.importRows` 를 거친다.
