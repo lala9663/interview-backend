@@ -110,6 +110,7 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
   - 이 파일들은 다른 변경과 섞지 말고 **작은 PR 로 먼저** 합친다.
   - `application.yml` 은 자기 기능의 `app.<feature>:` 블록만 건드린다.
   - `schema.sql` 은 손으로 고치지 않는다. 충돌이 나면 양쪽 엔티티를 합친 뒤 `./gradlew generateOracleSchema` 로 다시 만든다.
+- 작업 중에 범위 밖의 아이디어나 개선점이 나오면 그 자리에서 만들지 않고 세 레포 공통 문서의 `09-backlog.md`(할 목록)에 적는다. 적는 법은 그 문서 맨 위에 있다.
 - 다른 사람의 패키지를 고쳐야 하면 PR 설명에 적고 그 담당자에게 알린다. 리팩터링과 기능 변경을 한 PR 에 섞지 않는다.
 - 합치기 전에 `./gradlew build`. 실패한 채로 합치지 않는다.
 
