@@ -63,7 +63,8 @@
 - **ADMIN 전용**: 계약 표에 (ADMIN) 이 붙은 엔드포인트. 컨트롤러 메서드의 `@PreAuthorize("hasRole('ADMIN')")`.
   채용 등록, 직무 등록·수정, 업로드, 자동 매칭, 면접관 수동 지정, 질문 은행 등록·삭제.
 - **면접 단위 쓰기**: 그 면접에 배정된 면접관(`IV_INTERVIEW_ASSIGNEE`)과 ADMIN 만. 서비스에서 `InterviewAccess.requireWritable(interviewId, user)`.
-  방 생성·시작·종료·입장권, 꼬리질문 채택, 내 평가 저장, 질문 추가·수정, 브리핑 생성, 보고서 재생성, 면접 수정(PATCH).
+  방 생성·시작·종료·입장권, 꼬리질문 채택, 내 평가 저장, 질문 추가·수정, 브리핑 생성, 보고서 재생성, 면접 수정(PATCH),
+  그 면접의 질문을 질문 은행에 담기(`POST /question-bank/from-question/{questionId}`).
 - **조회**: 로그인한 사용자 모두. `GET /interviews/{id}/my-evaluation` 은 자기 것만 돌려준다.
 - 컨트롤러에서 로그인 사용자는 `@AuthenticationPrincipal CurrentUser user` 로 받는다.
 
