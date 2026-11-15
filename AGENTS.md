@@ -95,9 +95,13 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 - Windows 는 `gradlew.bat`. JDK 는 8 이어야 한다(`java -version`).
 - 테스트 프로파일은 `local,test`: 메모리 H2 + Fake Agent + 시드. 테스트 클래스들이 DB 를 공유하므로 **다른 테스트가 만든 데이터에 기대지 말고**, 필요한 데이터는 그 테스트 안에서 만든다.
 
-## 8. trunk-based 규칙 (3명이 동시에 작업)
+## 8. 브랜치 규칙 (3명이 동시에 작업, `dev` + `main`)
 
-- `main` 하나만 길게 산다. 브랜치는 **하루 안에** 합친다. PR 은 작게(대략 300줄 이내, 한 가지 목적).
+- 길게 사는 브랜치는 둘이다. `dev`는 작업을 모으는 곳이고, `main`은 매주 화요일에 올리는 확인된 지점이다.
+- 작업 브랜치는 `dev`에서 따서 하루 이틀 안에 PR로 `dev`에 합친다(스쿼시 병합: 작업 하나가 커밋 하나로 남는다). 오래 사는 작업 브랜치를 두지 않는다.
+- `main`에는 직접 커밋하지 않는다. 화요일에 병합 담당이 세 서비스를 함께 띄워 확인한 뒤 `dev`를 `main`으로 올리고(일반 병합) 태그를 붙인다(예: `2026-w47`). 세 레포는 같은 날 같은 태그로 올린다.
+- `dev`는 항상 빌드되고 테스트가 통과해야 한다. 깨졌으면 새 작업보다 복구가 먼저다.
+- PR 은 작게(대략 300줄 이내, 한 가지 목적).
 - 덜 끝난 기능은 **기능 플래그** 뒤에 두고 합친다: `application.yml` 의 `app.features.<이름>: false` → 코드에서 `@Value("${app.features.<이름>:false}")` 또는 `@ConditionalOnProperty`. 끝나면 플래그를 지운다.
 - **공용 파일 수정을 최소화한다.** 충돌이 잦은 파일: `application.yml`, `build.gradle`, `SecurityConfig`, `LocalSeedRunner`, `excel-mapping.yml`, `db/oracle/schema.sql`, `AGENTS.md`.
   - 이 파일들은 다른 변경과 섞지 말고 **작은 PR 로 먼저** 합친다.
