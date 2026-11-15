@@ -87,6 +87,10 @@ class CoreFlowIntegrationTest extends ApiTestSupport {
         assertThat(pt.get("interviewers")).hasSize(2);
         assertThat(pt.get("interviewers").get(0).get("matchedBy").asText()).isEqualTo("JD");
         final long interviewId = pt.get("id").asLong();
+        // 목록의 type 은 "지금 차수"(여기서는 PT) 면접의 종류로 거른다.
+        String byNo = "/api/v1/recruitments/" + recruitmentId + "/candidates?q=2026H-00001&type=";
+        assertThat(apiGet(admin, byNo + "PT").expect(200).json.get("total").asInt()).isEqualTo(1);
+        assertThat(apiGet(admin, byNo + "PERSONALITY").expect(200).json.get("total").asInt()).isZero();
         // 다시 실행해도 이미 배정된 면접은 건드리지 않는다.
         JsonNode rematch = api(HttpMethod.POST, admin, "/api/v1/recruitments/" + recruitmentId + "/assignments/auto", null)
                 .expect(200).json;

@@ -89,6 +89,17 @@ public final class QualityDtos {
         private Double askedRate;
         private long autoMatched;
         private Double autoMatchedRate;
+        /** 출처(JD, RESUME, BANK)별 사용률. 항상 이 순서로 세 항목. */
+        private List<SourceUsage> bySource = new ArrayList<SourceUsage>();
+    }
+
+    @Getter
+    @Setter
+    public static class SourceUsage {
+        private String source;
+        private long prepared;
+        private long asked;
+        private Double askedRate;
     }
 
     @Getter

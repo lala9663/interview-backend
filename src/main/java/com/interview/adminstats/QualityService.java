@@ -254,6 +254,21 @@ public class QualityService {
         target.setAutoMatched(questionRepository.countAutoMatchedOfRecruitment(recruitmentId, PREPARED));
         target.setAskedRate(StatMath.rate(target.getAsked(), target.getPrepared()));
         target.setAutoMatchedRate(StatMath.rate(target.getAutoMatched(), target.getAsked()));
+
+        // 출처별: 어떤 종류의 준비 질문이 실제로 더 쓰였는지 비교한다. 질문이 없는 출처도 0으로 내보낸다.
+        Map<QuestionSource, Object[]> bySource = new HashMap<QuestionSource, Object[]>();
+        for (Object[] row : questionRepository.summarizePreparedBySourceOfRecruitment(recruitmentId, PREPARED)) {
+            bySource.put((QuestionSource) row[0], row);
+        }
+        for (QuestionSource source : PREPARED) {
+            Object[] row = bySource.get(source);
+            QualityDtos.SourceUsage usage = new QualityDtos.SourceUsage();
+            usage.setSource(source.name());
+            usage.setPrepared(row == null ? 0 : number(row[1]));
+            usage.setAsked(row == null ? 0 : number(row[2]));
+            usage.setAskedRate(StatMath.rate(usage.getAsked(), usage.getPrepared()));
+            target.getBySource().add(usage);
+        }
     }
 
     /** 방 종료 → 그 면접의 첫 LIVE / 첫 REFINED 보고서까지 걸린 시간(초). */

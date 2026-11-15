@@ -339,6 +339,16 @@ class AdminStatsTest extends ApiTestSupport {
         assertThat(questions.get("askedRate").asDouble()).isEqualTo(0.67);
         assertThat(questions.get("autoMatched").asInt()).isEqualTo(1);
         assertThat(questions.get("autoMatchedRate").asDouble()).isEqualTo(0.5);
+        // 출처별: JD 1개 중 1개, RESUME 1개 중 1개, BANK 1개 중 0개. 직접 추가(MANUAL)는 들어가지 않는다.
+        JsonNode bySource = questions.get("bySource");
+        assertThat(bySource).hasSize(3);
+        assertThat(bySource.get(0).get("source").asText()).isEqualTo("JD");
+        assertThat(bySource.get(0).get("prepared").asInt()).isEqualTo(1);
+        assertThat(bySource.get(0).get("askedRate").asDouble()).isEqualTo(1.0);
+        assertThat(bySource.get(1).get("source").asText()).isEqualTo("RESUME");
+        assertThat(bySource.get(2).get("source").asText()).isEqualTo("BANK");
+        assertThat(bySource.get(2).get("asked").asInt()).isZero();
+        assertThat(bySource.get(2).get("askedRate").asDouble()).isEqualTo(0.0);
 
         JsonNode reports = body.get("reports");
         assertThat(reports.get("liveCount").asInt()).isEqualTo(1);

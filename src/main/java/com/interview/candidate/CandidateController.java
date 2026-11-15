@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.interview.common.web.PageResponse;
 import com.interview.interview.InterviewStatus;
+import com.interview.interview.InterviewType;
 import com.interview.recruitment.RecruitmentService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,10 +25,11 @@ public class CandidateController {
     @GetMapping("/recruitments/{id}/candidates")
     public PageResponse<CandidateDtos.ListItem> list(@PathVariable Long id,
             @RequestParam(required = false) String jobCode, @RequestParam(required = false) String q,
-            @RequestParam(required = false) InterviewStatus status, @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) InterviewStatus status,
+            @RequestParam(required = false) InterviewType type, @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         recruitmentService.get(id);
-        return candidateService.list(id, jobCode, q, status, page, size);
+        return candidateService.list(id, jobCode, q, status, type, page, size);
     }
 
     @GetMapping("/candidates/{id}")

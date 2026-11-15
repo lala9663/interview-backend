@@ -80,7 +80,7 @@
 | 30 | `elapsedMinutes` 는 시작 전이면 null. `lateMinutes`·`overtimeMinutes`·`silentMinutes`·`queueDepth`·`droppedChunks` 는 해당 없으면 0. Agent 가 DOWN 이면 `agent.rooms` 는 null, `providers` 는 빈 배열 | `OperationsService` |
 | 31 | 현황판의 `summary.live` 는 면접 상태 IN_PROGRESS 의 수. 취소된 면접은 `total` 에만 든다 | `OperationsService` |
 | 32 | `endedInterviewCount` 는 방이 ENDED 인 면접 수 | `QualityService` |
-| 33 | "준비된 질문"은 브리핑이 만든 질문(JD·RESUME·BANK) 가운데 숨기지 않은 것. `autoMatched` 는 물은 질문 가운데 전사의 `matchedQuestionId` 로 걸린 것 | `QualityService`, `QuestionRepository` |
+| 33 | "준비된 질문"은 브리핑이 만든 질문(JD·RESUME·BANK) 가운데 숨기지 않은 것. `autoMatched` 는 물은 질문 가운데 전사의 `matchedQuestionId` 로 걸린 것. `bySource` 는 같은 집계를 출처별로 나눈 것 | `QualityService`, `QuestionRepository` |
 | 34 | `followUps.roomCount` 는 꼬리질문 제안이 한 건이라도 있었던 방의 수 | `FollowUpRepository.summarizeOfRecruitment` |
 | 35 | `scoreGap.byCriterion` 은 항목 코드로 묶는다(트랙·유형이 달라도 코드가 같으면 한 줄). 정렬은 코드 순 | `QualityService` |
 | 36 | 보고서 소요 시간은 방 종료 → 그 면접의 첫 LIVE / 첫 REFINED 보고서. 다시 만든 보고서는 세지 않는다 | `ReportRepository.firstGeneratedOfRecruitment` |

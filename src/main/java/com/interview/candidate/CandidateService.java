@@ -20,6 +20,7 @@ import com.interview.interview.InterviewDto;
 import com.interview.interview.InterviewRepository;
 import com.interview.interview.InterviewStages;
 import com.interview.interview.InterviewStatus;
+import com.interview.interview.InterviewType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,12 +39,12 @@ public class CandidateService {
     }
 
     /**
-     * 면접자 목록. status 는 "지금 차수" 면접의 상태로 거른다.
+     * 면접자 목록. status 와 type 은 "지금 차수" 면접의 상태·종류로 거른다.
      * 지금 차수는 DB 컬럼이 아니라 계산값이라, 채용 한 건의 면접자를 모두 읽은 뒤 메모리에서 거르고 자른다
      * (채용 한 건에 수천 명 수준까지를 가정).
      */
     public PageResponse<CandidateDtos.ListItem> list(final Long recruitmentId, final String jobCode, final String q,
-            InterviewStatus status, Integer page, Integer size) {
+            InterviewStatus status, InterviewType type, Integer page, Integer size) {
         Specification<Candidate> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<Predicate>();
             predicates.add(cb.equal(root.get("recruitmentId"), recruitmentId));
@@ -75,6 +76,9 @@ public class CandidateService {
             List<Interview> list = byCandidate.get(c.getId());
             Interview current = list == null ? null : InterviewStages.current(list);
             if (status != null && (current == null || current.getStatus() != status)) {
+                continue;
+            }
+            if (type != null && (current == null || current.getType() != type)) {
                 continue;
             }
             if (current != null) {
