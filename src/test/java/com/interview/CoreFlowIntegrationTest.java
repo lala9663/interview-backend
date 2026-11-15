@@ -194,6 +194,21 @@ class CoreFlowIntegrationTest extends ApiTestSupport {
                 .expect(200).json;
         assertThat(used.get("source").asText()).isEqualTo("FOLLOW_UP");
         assertThat(used.get("parentQuestionId").asLong()).isEqualTo(firstQuestionId);
+
+        // 면접에서 쓴 질문을 은행에 담는다: 직무·유형은 면접에서 오고, 같은 글은 한 번만 들어간다.
+        String toBank = "/api/v1/question-bank/from-question/" + used.get("id").asLong();
+        JsonNode banked = api(HttpMethod.POST, admin, toBank, null).expect(200).json;
+        assertThat(banked.get("jobCode").asText()).isEqualTo("SW");
+        assertThat(banked.get("interviewType").asText()).isEqualTo("PT");
+        assertThat(banked.get("category").asText()).isEqualTo("꼬리질문");
+        assertThat(banked.get("text").asText()).isEqualTo("그때 가장 어려웠던 점은?");
+        assertThat(api(HttpMethod.POST, admin, toBank, null).expect(200).json.get("id").asLong())
+                .isEqualTo(banked.get("id").asLong());
+        JsonNode reworded = api(HttpMethod.POST, admin, toBank,
+                "{\"text\":\"프로젝트에서 가장 어려웠던 점은 무엇이었나요?\",\"category\":\"문제 해결\"}").expect(200).json;
+        assertThat(reworded.get("id").asLong()).isNotEqualTo(banked.get("id").asLong());
+        assertThat(reworded.get("category").asText()).isEqualTo("문제 해결");
+        api(HttpMethod.POST, admin, "/api/v1/question-bank/from-question/999999999", null).expect(404);
         internal(HttpMethod.POST, "/internal/v1/rooms/" + roomId + "/events",
                 "{\"type\":\"AUDIO_DROPPED\",\"message\":\"테스트\",\"data\":{\"ms\":120}}").expect(200);
 

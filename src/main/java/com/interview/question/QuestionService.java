@@ -25,6 +25,11 @@ public class QuestionService {
         return questionRepository.findByInterviewIdOrderByOrderNoAscIdAsc(interviewId);
     }
 
+    public Question get(Long questionId) {
+        return questionRepository.findById(questionId)
+                .orElseThrow(() -> ApiException.notFound("QUESTION_NOT_FOUND", "질문을 찾을 수 없습니다."));
+    }
+
     @Transactional
     public Question addManual(Long interviewId, QuestionRequests.Add request, CurrentUser user) {
         interviewAccess.requireWritable(interviewId, user);
