@@ -101,7 +101,9 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 - 작업 브랜치는 `dev`에서 따서 하루 이틀 안에 PR로 `dev`에 합친다(스쿼시 병합: 작업 하나가 커밋 하나로 남는다). 오래 사는 작업 브랜치를 두지 않는다.
 - `main`에는 직접 커밋하지 않는다. 화요일에 병합 담당이 세 서비스를 함께 띄워 확인한 뒤 `dev`를 `main`으로 올리고(일반 병합) 태그를 붙인다(예: `2026-w47`). 세 레포는 같은 날 같은 태그로 올린다.
 - `dev`는 항상 빌드되고 테스트가 통과해야 한다. 깨졌으면 새 작업보다 복구가 먼저다.
-- PR 은 작게(대략 300줄 이내, 한 가지 목적).
+- PR 은 작게(대략 300줄 이내, 한 가지 목적). PR 에 `./gradlew build` 결과를 붙인다.
+- 커밋 메시지(= PR 제목)는 `<영역>: <무엇을 왜>` 한 줄, 한국어. 예: `speaker: 되묻기 구간 규칙 추가`. 영역은 기능 폴더나 패키지 이름이다. 계약을 바꾸면 앞에 `[계약 변경]`을 붙인다. `dev`에는 스쿼시로 합치므로 PR 제목이 그대로 커밋 한 줄이 된다.
+- 리뷰는 1명, 영역이 다른 사람이 본다. 계약을 바꾸는 PR은 세 명 모두 확인한다.
 - 덜 끝난 기능은 **기능 플래그** 뒤에 두고 합친다: `application.yml` 의 `app.features.<이름>: false` → 코드에서 `@Value("${app.features.<이름>:false}")` 또는 `@ConditionalOnProperty`. 끝나면 플래그를 지운다.
 - **공용 파일 수정을 최소화한다.** 충돌이 잦은 파일: `application.yml`, `build.gradle`, `SecurityConfig`, `LocalSeedRunner`, `excel-mapping.yml`, `db/oracle/schema.sql`, `AGENTS.md`.
   - 이 파일들은 다른 변경과 섞지 말고 **작은 PR 로 먼저** 합친다.
