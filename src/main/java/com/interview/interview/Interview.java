@@ -19,7 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** 면접 한 건. 면접자 한 명이 여러 건(PT, 인성, 포트폴리오, 직무)을 가진다. */
+/** 면접 한 건. 면접자 한 명이 여러 건(직무, 인성)을 가진다. */
 @Entity
 @Table(name = "IV_INTERVIEW", indexes = { @Index(name = "IX_IV_INTERVIEW_CAND", columnList = "CANDIDATE_ID"),
         @Index(name = "IX_IV_INTERVIEW_RECR", columnList = "RECRUITMENT_ID"),
@@ -68,6 +68,10 @@ public class Interview {
 
     @Column(name = "DURATION_MINUTES")
     private Integer durationMinutes;
+
+    /** 면접관이 고른 페르소나(persona.Persona 의 id). 고르지 않았으면 null 이고 기본 선택을 따른다. */
+    @Column(name = "PERSONA_ID")
+    private Long personaId;
 
     @Column(name = "CREATED_AT", nullable = false)
     private LocalDateTime createdAt;

@@ -12,7 +12,9 @@ create sequence iv_follow_up_seq start with 1 increment by  1;
 create sequence iv_interview_assignee_seq start with 1 increment by  1;
 create sequence iv_interview_seq start with 1 increment by  1;
 create sequence iv_job_posting_seq start with 1 increment by  1;
+create sequence iv_persona_seq start with 1 increment by  1;
 create sequence iv_question_bank_seq start with 1 increment by  1;
+create sequence iv_question_feedback_seq start with 1 increment by  1;
 create sequence iv_question_seq start with 1 increment by  1;
 create sequence iv_recruitment_seq start with 1 increment by  1;
 create sequence iv_report_seq start with 1 increment by  1;
@@ -54,6 +56,7 @@ create sequence iv_utterance_seq start with 1 increment by  1;
         generated_at timestamp,
         interview_id number(19,0) not null,
         model_name varchar2(100 char),
+        persona_id number(19,0),
         status varchar2(20 char) not null,
         summary_json clob,
         primary key (id)
@@ -62,6 +65,7 @@ create sequence iv_utterance_seq start with 1 increment by  1;
     create table iv_candidate (
        id number(19,0) not null,
         applicant_no varchar2(50 char) not null,
+        applicant_kind varchar2(20 char),
         blinded_fields varchar2(500 char),
         created_at timestamp not null,
         job_code varchar2(30 char) not null,
@@ -119,6 +123,7 @@ create sequence iv_utterance_seq start with 1 increment by  1;
         created_at timestamp not null,
         duration_minutes number(10,0),
         interview_mode varchar2(20 char) not null,
+        persona_id number(19,0),
         recruitment_id number(19,0) not null,
         scheduled_at timestamp,
         seq_no number(10,0) not null,
@@ -146,6 +151,22 @@ create sequence iv_utterance_seq start with 1 increment by  1;
         primary key (id)
     );
 
+    create table iv_persona (
+       id number(19,0) not null,
+        created_at timestamp not null,
+        is_custom number(1,0) not null,
+        description varchar2(1000 char),
+        is_enabled number(1,0) not null,
+        fit_note varchar2(500 char),
+        follow_up_kind varchar2(100 char),
+        guard_note varchar2(1000 char),
+        name varchar2(100 char) not null,
+        question_kind varchar2(100 char),
+        is_recommended number(1,0) not null,
+        tone varchar2(20 char),
+        primary key (id)
+    );
+
     create table iv_question (
        id number(19,0) not null,
         is_asked number(1,0) not null,
@@ -170,6 +191,16 @@ create sequence iv_utterance_seq start with 1 increment by  1;
         job_code varchar2(30 char),
         sample_answer clob,
         question_text varchar2(1000 char) not null,
+        primary key (id)
+    );
+
+    create table iv_question_feedback (
+       id number(19,0) not null,
+        interview_id number(19,0) not null,
+        overall varchar2(20 char),
+        updated_at timestamp not null,
+        user_id number(19,0) not null,
+        votes_json clob,
         primary key (id)
     );
 
@@ -294,8 +325,14 @@ create index IX_IV_ASSIGNEE_USER on iv_interview_assignee (user_id);
 
     alter table iv_job_posting 
        add constraint UK_IV_JOB_POSTING_CODE unique (recruitment_id, job_code);
+
+    alter table iv_persona 
+       add constraint UK_IV_PERSONA_NAME unique (name);
 create index IX_IV_QUESTION_INTERVIEW on iv_question (interview_id);
 create index IX_IV_QBANK_JOB on iv_question_bank (job_code);
+
+    alter table iv_question_feedback 
+       add constraint UK_IV_Q_FEEDBACK_IV_USER unique (interview_id, user_id);
 
     alter table iv_report 
        add constraint UK_IV_REPORT_VERSION unique (interview_id, version_no);

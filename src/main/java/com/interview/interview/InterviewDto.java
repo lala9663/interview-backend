@@ -4,7 +4,9 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.interview.candidate.ApplicantType;
 import com.interview.job.JobStatus;
+import com.interview.persona.PersonaDtos;
 import com.interview.recruitment.Track;
 import com.interview.report.ReportBasis;
 import com.interview.room.RoomStatus;
@@ -32,6 +34,10 @@ public class InterviewDto {
     private JobStatus briefingStatus;
     private JobStatus reportStatus;
     private ReportBasis reportBasis;
+    /** 이 면접에서 실시간 기능(녹음, 전사, 꼬리질문 제안, 면접 뒤 보고서)을 쓰는가. */
+    private boolean liveEnabled;
+    /** 이 면접에 적용되는 페르소나의 요약. 쓰는 페르소나가 하나도 없으면 null. */
+    private PersonaDtos.Summary persona;
 
     @Getter
     public static class CandidateRef {
@@ -39,12 +45,14 @@ public class InterviewDto {
         private final String name;
         private final String applicantNo;
         private final String jobTitle;
+        private final ApplicantType applicantType;
 
-        public CandidateRef(Long id, String name, String applicantNo, String jobTitle) {
+        public CandidateRef(Long id, String name, String applicantNo, String jobTitle, ApplicantType applicantType) {
             this.id = id;
             this.name = name;
             this.applicantNo = applicantNo;
             this.jobTitle = jobTitle;
+            this.applicantType = applicantType;
         }
     }
 

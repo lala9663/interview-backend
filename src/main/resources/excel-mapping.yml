@@ -7,6 +7,9 @@
 #   블라인드 기준은 현업이 정한다. 기준이 오면 여기에 항목을 추가한다(docs/open-questions.md).
 # - field 값:
 #     applicantNo | name | jobCode | jobTitle            면접자 기본 항목
+#     applicantType                                      면접자 유형. 장학생 | 공채 | 인턴 전환 | 일반 경력 | 박사 | 경력 석사
+#                                                        (또는 SCHOLARSHIP | OPEN | INTERN | CAREER | PHD | CAREER_MASTER).
+#                                                        열이 없거나 모르는 값이면 비워 둔다
 #     education.degree | education.school | education.major | education.gpa
 #     courses | certificates                             쉼표·줄바꿈으로 나눠 목록으로 저장
 #     essay | project | career                           title 과 함께 한 건으로 저장 (여러 컬럼 가능)
@@ -19,6 +22,7 @@ columns:
   - { header: 성명,         field: name,        required: true, maxLength: 100, aliases: [이름, 지원자명] }
   - { header: 지원직무코드, field: jobCode,     required: true, maxLength: 30, aliases: [직무코드] }
   - { header: 지원직무명,   field: jobTitle,    aliases: [직무명] }
+  - { header: 지원유형,     field: applicantType, aliases: [면접자유형, 지원구분] }
 
   # ---- 블라인드 항목: 값은 저장하지 않는다 ----
   - { header: 성별,     blind: true, blindKey: gender }

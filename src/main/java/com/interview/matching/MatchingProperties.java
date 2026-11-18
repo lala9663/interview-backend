@@ -24,11 +24,11 @@ public class MatchingProperties {
     /** 면접 한 건에 배정할 면접관 수. */
     private int interviewersPerInterview = 2;
 
-    /** 자동 매칭 때 면접이 하나도 없는 면접자에게 만들어 줄 면접(순서대로 1차, 2차 ...). */
+    /** 자동 매칭 때 면접이 하나도 없는 면접자에게 만들어 줄 면접(순서대로 1차, 2차 ...). 신입도 경력도 직무 → 인성이다. */
     private List<InterviewType> newGradPlan = new ArrayList<InterviewType>(
-            Arrays.asList(InterviewType.PT, InterviewType.PERSONALITY));
+            Arrays.asList(InterviewType.JOB, InterviewType.PERSONALITY));
     private List<InterviewType> experiencedPlan = new ArrayList<InterviewType>(
-            Arrays.asList(InterviewType.PORTFOLIO, InterviewType.JOB, InterviewType.PERSONALITY));
+            Arrays.asList(InterviewType.JOB, InterviewType.PERSONALITY));
 
     public List<InterviewType> plan(Track track) {
         return track == Track.EXPERIENCED ? experiencedPlan : newGradPlan;

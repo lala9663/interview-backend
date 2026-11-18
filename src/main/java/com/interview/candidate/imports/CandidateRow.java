@@ -3,6 +3,7 @@ package com.interview.candidate.imports;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.interview.candidate.ApplicantType;
 import com.interview.candidate.CandidateProfile;
 
 import lombok.Getter;
@@ -19,6 +20,8 @@ public class CandidateRow {
     private String name;
     private String jobCode;
     private String jobTitle;
+    /** 면접자 유형. 입력에 없거나 알 수 없는 값이면 null. */
+    private ApplicantType applicantType;
     private CandidateProfile profile = new CandidateProfile();
     /** 입력에 있었지만 버린 블라인드 항목의 키. */
     private List<String> blindedFields = new ArrayList<String>();

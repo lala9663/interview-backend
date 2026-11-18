@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ import com.interview.interview.InterviewRepository;
 import com.interview.interview.InterviewService;
 import com.interview.interview.InterviewStatus;
 import com.interview.interview.InterviewType;
+import com.interview.interview.LiveProperties;
 import com.interview.interview.MatchedBy;
 import com.interview.job.AiJob;
 import com.interview.job.AiJobRepository;
@@ -111,8 +113,22 @@ class AdminStatsTest extends ApiTestSupport {
     private long userB;
     private long userC;
 
+    @Autowired
+    private LiveProperties liveProps;
+
+    private boolean newGradLiveBefore;
+
+    @AfterEach
+    void restoreLiveSetting() {
+        liveProps.setNewGradEnabled(newGradLiveBefore);
+    }
+
     @BeforeEach
     void setUp() throws Exception {
+        // 이 테스트의 채용은 신입이다. 전사·마이크·AI 작업 관련 주의까지 보려면 신입의 실시간 기능을 켜야 한다
+        // (기본은 꺼져 있다. 꺼졌을 때의 동작은 operationsSkipsLiveAlertsWhenLiveIsDisabled 가 본다).
+        newGradLiveBefore = liveProps.isNewGradEnabled();
+        liveProps.setNewGradEnabled(true);
         fakeAgent.setFakeStats(null);
         fakeAgent.setStatsDown(false);
         admin = login("E1001");
@@ -243,6 +259,47 @@ class AdminStatsTest extends ApiTestSupport {
     }
 
     @Test
+    void operationsSkipsLiveAlertsWhenLiveIsDisabled() throws Exception {
+        // 실시간 기능을 쓰지 않는 면접: 전사·마이크·Agent·AI 작업을 전제로 한 주의는 붙지 않고, 시작 지연·시간 초과만 붙는다.
+        liveProps.setNewGradEnabled(false);
+        String url = "/api/v1/admin/operations?recruitmentId=" + recruitmentId + "&date=" + date;
+        try {
+            // Agent 가 그 방의 마이크가 끊겼고 큐가 밀렸다고 해도 붙지 않는다.
+            AgentDtos.StatsResponse stats = new AgentDtos.StatsResponse();
+            AgentDtos.RoomStat roomStat = new AgentDtos.RoomStat();
+            roomStat.setRoomId(room2.getId());
+            roomStat.setQueueDepth(7);
+            roomStat.setAudioConnected(false);
+            stats.getRoomStats().add(roomStat);
+            fakeAgent.setFakeStats(stats);
+
+            JsonNode body = apiGet(admin, url).expect(200).json;
+            Map<Long, JsonNode> byId = byInterviewId(body.get("items"));
+            assertThat(byId.get(i1.getId()).get("interview").get("liveEnabled").asBoolean()).isFalse();
+            assertThat(byId.get(i1.getId()).get("alerts")).isEmpty();                       // JOB_FAILED 없음
+            JsonNode live = byId.get(i2.getId());
+            assertThat(texts(live.get("alerts"))).containsExactly("OVERTIME");               // SILENT·NO_AUDIO·STT_BACKLOG 없음
+            assertThat(live.get("overtimeMinutes").asInt()).isEqualTo(20);
+            assertThat(live.get("lateMinutes").asInt()).isEqualTo(10);
+            assertThat(live.get("silentMinutes").asInt()).isZero();
+            assertThat(texts(byId.get(i3.getId()).get("alerts"))).containsExactly("NOT_STARTED");
+            // 주의가 있는 면접 수에도 세지 않는다: 시간 초과(I2)와 시작 지연(I3)뿐이다.
+            assertThat(body.get("summary").get("attention").asInt()).isEqualTo(2);
+            assertThat(body.get("summary").get("total").asInt()).isEqualTo(4);
+
+            // Agent 가 죽어 있어도 AGENT_DOWN 이 붙지 않는다.
+            fakeAgent.setStatsDown(true);
+            JsonNode down = apiGet(admin, url).expect(200).json;
+            assertThat(down.get("agent").get("status").asText()).isEqualTo("DOWN");
+            assertThat(texts(byInterviewId(down.get("items")).get(i2.getId()).get("alerts"))).containsExactly("OVERTIME");
+            assertThat(down.get("summary").get("attention").asInt()).isEqualTo(2);
+        } finally {
+            fakeAgent.setFakeStats(null);
+            fakeAgent.setStatsDown(false);
+        }
+    }
+
+    @Test
     void operationsMergesAgentRoomStatsAndSurvivesAgentDown() throws Exception {
         String url = "/api/v1/admin/operations?recruitmentId=" + recruitmentId + "&date=" + date;
         try {
@@ -311,7 +368,7 @@ class AdminStatsTest extends ApiTestSupport {
         assertThat(gap.get("byCriterion").get(1).get("criterionCode").asText()).isEqualTo("PROBLEM_SOLVING");
         assertThat(gap.get("byCriterion").get(1).get("meanDiff").asDouble()).isEqualTo(0.0);
 
-        // 신입 PT 의 평가 항목은 4개, AI 가 점수를 낸 것은 2개
+        // 신입 직무 면접의 평가 항목은 4개, AI 가 점수를 낸 것은 2개
         assertThat(body.get("aiCoverage").get("expected").asInt()).isEqualTo(4);
         assertThat(body.get("aiCoverage").get("scored").asInt()).isEqualTo(2);
         assertThat(body.get("aiCoverage").get("rate").asDouble()).isEqualTo(0.5);
@@ -449,7 +506,7 @@ class AdminStatsTest extends ApiTestSupport {
         c.setJobTitle("SW개발");
         c.setCreatedAt(Times.now());
         candidateRepository.save(c);
-        Interview i = InterviewService.newInterview(c, InterviewType.PT, 1);
+        Interview i = InterviewService.newInterview(c, InterviewType.JOB, 1);
         i.setStatus(status);
         i.setScheduledAt(scheduledAt);
         return interviewRepository.save(i);

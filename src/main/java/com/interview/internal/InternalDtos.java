@@ -8,6 +8,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.interview.agent.dto.AgentDtos;
 import com.interview.interview.InterviewMode;
@@ -42,6 +43,9 @@ public final class InternalDtos {
         private String candidateBrief;
         private List<ContextQuestion> questions = new ArrayList<ContextQuestion>();
         private List<AgentDtos.BankItem> questionBank = new ArrayList<AgentDtos.BankItem>();
+        /** 이 면접에 적용되는 페르소나(선택). 없으면 필드가 없다. */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private AgentDtos.PersonaPart persona;
     }
 
     @Getter

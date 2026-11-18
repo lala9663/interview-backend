@@ -39,8 +39,9 @@ public class HttpAgentClient implements AgentClient {
     private final ObjectMapper objectMapper;
     private final Map<Integer, RestTemplate> templates = new ConcurrentHashMap<Integer, RestTemplate>();
 
+    private final Object healthLock = new Object();
     private volatile long healthCheckedAt;
-    private volatile boolean healthUp;
+    private volatile AgentDtos.Health lastHealth = new AgentDtos.Health("DOWN", null, null);
 
     public HttpAgentClient(AgentProperties props, AppSecurityProperties securityProps, ObjectMapper objectMapper) {
         this.props = props;
@@ -50,21 +51,40 @@ public class HttpAgentClient implements AgentClient {
 
     @Override
     public boolean isUp() {
-        long now = System.currentTimeMillis();
-        if (now - healthCheckedAt < HEALTH_CACHE_MILLIS) {
-            return healthUp;
+        return health().isUp();
+    }
+
+    /**
+     * 결과를 5초 동안 기억한다(화면이 자주 물어도 Agent 를 그만큼 부르지 않게). 5초는 호출이 끝난 시각부터 센다.
+     * 기억한 값이 낡은 순간에 요청이 몰려도 한 요청만 Agent 를 부르고, 나머지는 그 결과를 기다렸다가 같이 쓴다.
+     */
+    @Override
+    public AgentDtos.Health health() {
+        if (System.currentTimeMillis() - healthCheckedAt < HEALTH_CACHE_MILLIS) {
+            return lastHealth;
         }
-        boolean up;
-        try {
-            JsonNode body = template(props.getHealthTimeoutSeconds()).getForObject(props.getBaseUrl() + "/health",
-                    JsonNode.class);
-            up = body != null && "UP".equalsIgnoreCase(body.path("status").asText());
-        } catch (RestClientException e) {
-            up = false;
+        synchronized (healthLock) {
+            if (System.currentTimeMillis() - healthCheckedAt < HEALTH_CACHE_MILLIS) {
+                return lastHealth;
+            }
+            AgentDtos.Health result;
+            try {
+                JsonNode body = template(props.getHealthTimeoutSeconds()).getForObject(props.getBaseUrl() + "/health",
+                        JsonNode.class);
+                boolean up = body != null && "UP".equalsIgnoreCase(body.path("status").asText());
+                result = new AgentDtos.Health(up ? "UP" : "DOWN", textOrNull(body, "llmStatus"),
+                        textOrNull(body, "sttStatus"));
+            } catch (RestClientException e) {
+                result = new AgentDtos.Health("DOWN", null, null);
+            }
+            lastHealth = result;
+            healthCheckedAt = System.currentTimeMillis();
+            return result;
         }
-        healthUp = up;
-        healthCheckedAt = now;
-        return up;
+    }
+
+    private static String textOrNull(JsonNode body, String field) {
+        return body == null || !body.hasNonNull(field) ? null : body.get(field).asText();
     }
 
     @Override

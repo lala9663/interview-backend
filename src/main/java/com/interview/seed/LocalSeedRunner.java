@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.interview.briefing.Briefing;
 import com.interview.briefing.BriefingRepository;
+import com.interview.candidate.ApplicantType;
 import com.interview.candidate.Candidate;
 import com.interview.candidate.CandidateProfile;
 import com.interview.candidate.CandidateRepository;
@@ -49,6 +50,7 @@ import com.interview.job.JobStatus;
 import com.interview.job.JobType;
 import com.interview.question.Question;
 import com.interview.question.QuestionRepository;
+import com.interview.question.QuestionService;
 import com.interview.question.QuestionSource;
 import com.interview.questionbank.QuestionBankItem;
 import com.interview.questionbank.QuestionBankRepository;
@@ -81,8 +83,9 @@ import lombok.RequiredArgsConstructor;
  * local 프로파일의 시드 데이터. 모두 가짜 데이터다(실제 사람·회사 정보가 아니다).
  * DB 가 비어 있을 때(사용자가 한 명도 없을 때) 한 번만 넣는다. 다시 넣으려면 ./data/ 폴더를 지운다.
  *
- * 들어가는 것: 사용자 6명, 평가 항목, 채용 2개와 직무, 질문 은행, 신입 면접자 12명 + 경력 4명,
- * 오늘 날짜의 면접(SCHEDULED / IN_PROGRESS / EVALUATING / DONE)과 그에 딸린 브리핑·전사·AI 평가·보고서.
+ * 들어가는 것: 사용자 6명, 평가 항목, 채용 2개와 직무, 질문 은행, 신입 면접자 12명 + 경력 12명, 오늘 날짜의 면접.
+ * - 신입(실시간 기능을 쓰지 않음): 사전 리포트, 준비된 질문과 예상 꼬리질문, 끝난 방, 면접관 평가. 전사·AI 평가·보고서는 없다.
+ * - 경력(실시간 기능을 씀): 진행 중인 방, 전사, 꼬리질문 후보, AI 평가, 보고서, AI 작업 기록(관리자 집계 화면용).
  */
 @Component
 @Profile("local")
@@ -93,6 +96,11 @@ public class LocalSeedRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(LocalSeedRunner.class);
     private static final String MODEL = "seed-data";
+    /** 시드 면접자의 유형. 순번대로 돌아가며 붙인다. */
+    private static final ApplicantType[] NEW_GRAD_TYPES = { ApplicantType.OPEN, ApplicantType.SCHOLARSHIP, ApplicantType.OPEN,
+            ApplicantType.INTERN };
+    private static final ApplicantType[] EXPERIENCED_TYPES = { ApplicantType.CAREER, ApplicantType.PHD,
+            ApplicantType.CAREER_MASTER, ApplicantType.CAREER };
 
     private final PlatformTransactionManager transactionManager;
     private final UserAccountRepository userRepository;
@@ -193,6 +201,8 @@ public class LocalSeedRunner implements ApplicationRunner {
         seedQuestionBank();
 
         // ---- 신입 면접자 12명 ----
+        // 신입 면접은 실시간 기능을 쓰지 않는다(app.live.new-grad-enabled 의 기본값). 그래서 준비된 질문·예상 꼬리질문·면접관 평가만 넣는다.
+        // 끝난 면접의 방은 ENDED 지만 전사·꼬리질문 후보·AI 평가·보고서가 없고, 진행 중(LIVE)인 방도 두지 않는다.
         String[] names = { "이도윤", "김하은", "박시우", "최지아", "정예준", "강수아", "조건우", "윤다은", "장현우", "임채원", "한지호", "오유나" };
         String[][] jobs = { { "SW", "SW개발" }, { "HW", "HW설계" }, { "AI", "AI연구" }, { "MGMT", "경영지원" } };
         List<Candidate> grads = new ArrayList<Candidate>();
@@ -202,105 +212,114 @@ public class LocalSeedRunner implements ApplicationRunner {
         }
         LocalDateTime day = today.atStartOfDay();
 
-        // 1번: PT 완료(보고서 LIVE → REFINED 두 버전), 인성 예정
-        Interview g1pt = interview(grads.get(0), InterviewType.PT, 1, InterviewStatus.DONE, day.plusHours(9).plusMinutes(30));
-        assign(g1pt, kim, park);
-        completed(g1pt, grads.get(0), true, kim, park);
+        // 1번: 직무 완료(두 면접관 모두 평가 제출), 인성 예정
+        Interview g1job = interview(grads.get(0), InterviewType.JOB, 1, InterviewStatus.DONE, day.plusHours(9).plusMinutes(30));
+        assign(g1job, kim, park);
+        endedWithoutLive(g1job, grads.get(0), kim, park);
         Interview g1ps = interview(grads.get(0), InterviewType.PERSONALITY, 2, InterviewStatus.SCHEDULED, day.plusHours(15));
         assign(g1ps, han, choi);
         briefing(g1ps, grads.get(0));
 
-        // 2번: PT 완료(보고서 LIVE 한 버전), 인성 예정
-        Interview g2pt = interview(grads.get(1), InterviewType.PT, 1, InterviewStatus.DONE, day.plusHours(10));
-        assign(g2pt, lee, han);
-        completed(g2pt, grads.get(1), false, lee, han);
+        // 2번: 직무 완료, 인성 예정(사전 리포트는 아직 없음)
+        Interview g2job = interview(grads.get(1), InterviewType.JOB, 1, InterviewStatus.DONE, day.plusHours(10));
+        assign(g2job, lee, han);
+        endedWithoutLive(g2job, grads.get(1), lee, han);
         Interview g2ps = interview(grads.get(1), InterviewType.PERSONALITY, 2, InterviewStatus.SCHEDULED, day.plusHours(15).plusMinutes(30));
         assign(g2ps, lee, han);
 
-        // 3번: PT 평가 중(방은 끝났고 보고서 초안까지 있음, 면접관 평가는 아직)
-        Interview g3pt = interview(grads.get(2), InterviewType.PT, 1, InterviewStatus.EVALUATING, day.plusHours(10).plusMinutes(30));
-        assign(g3pt, park, choi);
-        List<Question> g3q = briefing(g3pt, grads.get(2));
-        Room g3room = room(g3pt, RoomStatus.ENDED);
-        transcript(g3room, g3q, 4);
-        aiEvaluation(g3pt);
-        report(g3pt, 1, ReportBasis.LIVE, g3q);
+        // 3번: 직무 평가 중(방은 끝났고 면접관 한 명만 평가를 제출함)
+        Interview g3job = interview(grads.get(2), InterviewType.JOB, 1, InterviewStatus.EVALUATING, day.plusHours(10).plusMinutes(30));
+        assign(g3job, park, choi);
+        endedWithoutLive(g3job, grads.get(2), park);
 
-        // 4번: PT 진행 중(방 LIVE, 전사 일부)
-        // 운영 현황판에서 "예정 시간을 넘김"으로 보이게, 지금 기준 50분 전 예정 · 48분 전 시작(예정 길이 30분)으로 둔다.
-        Interview g4pt = interview(grads.get(3), InterviewType.PT, 1, InterviewStatus.IN_PROGRESS, Times.now().minusMinutes(50));
-        assign(g4pt, jung, han);
-        List<Question> g4q = briefing(g4pt, grads.get(3));
-        Room g4room = room(g4pt, RoomStatus.LIVE);
-        g4room.setStartedAt(Times.now().minusMinutes(48));
-        transcript(g4room, g4q, 2);
-
-        // 5~9번: PT 예정(브리핑 완료). 5번은 방까지 만들어 둠
-        UserAccount[][] pairs = { { kim, park }, { lee, han }, { choi, park }, { jung, han }, { kim, choi } };
-        for (int n = 4; n <= 8; n++) {
-            Interview pt = interview(grads.get(n), InterviewType.PT, 1, InterviewStatus.SCHEDULED,
-                    day.plusHours(13).plusMinutes((n - 4) * 40L));
-            assign(pt, pairs[n - 4][0], pairs[n - 4][1]);
-            briefing(pt, grads.get(n));
-            if (n == 4) {
-                room(pt, RoomStatus.CREATED);
+        // 4~9번: 직무 예정(사전 리포트 완료). 4번은 방까지 만들어 둠
+        UserAccount[][] pairs = { { jung, han }, { kim, park }, { lee, han }, { choi, park }, { jung, han }, { kim, choi } };
+        for (int n = 3; n <= 8; n++) {
+            Interview first = interview(grads.get(n), InterviewType.JOB, 1, InterviewStatus.SCHEDULED,
+                    day.plusHours(13).plusMinutes((n - 3) * 40L));
+            assign(first, pairs[n - 3][0], pairs[n - 3][1]);
+            briefing(first, grads.get(n));
+            if (n == 3) {
+                room(first, RoomStatus.CREATED);
             }
         }
-        // 10번: 내일 PT 예정(브리핑 없음), 11번: 일정 전(WAITING), 12번: 면접 없음(자동 매칭 대상)
-        Interview g10 = interview(grads.get(9), InterviewType.PT, 1, InterviewStatus.SCHEDULED, day.plusDays(1).plusHours(10));
+        // 10번: 내일 직무 예정(사전 리포트 없음), 11번: 일정 전(WAITING), 12번: 면접 없음(자동 매칭 대상)
+        Interview g10 = interview(grads.get(9), InterviewType.JOB, 1, InterviewStatus.SCHEDULED, day.plusDays(1).plusHours(10));
         assign(g10, lee, han);
-        Interview g11 = interview(grads.get(10), InterviewType.PT, 1, InterviewStatus.WAITING, null);
+        Interview g11 = interview(grads.get(10), InterviewType.JOB, 1, InterviewStatus.WAITING, null);
         assign(g11, choi, park);
 
-        // ---- 경력 면접자 4명 ----
+        // ---- 경력 면접자 12명 ----
+        // 실시간 기능을 쓰는 쪽이다. 진행 중인 방, 전사, 꼬리질문 후보, AI 평가, 보고서와 관리자 집계 화면의 볼거리를 여기에 둔다.
         Candidate e1 = candidate(experienced, "EXP-2026-0001", "서지훈", "SW", "SW개발(경력)", 0, true);
         Candidate e2 = candidate(experienced, "EXP-2026-0002", "문가윤", "AI", "AI연구(경력)", 1, true);
         Candidate e3 = candidate(experienced, "EXP-2026-0003", "배성민", "HW", "HW설계(경력)", 2, true);
         Candidate e4 = candidate(experienced, "EXP-2026-0004", "신예린", "SW", "SW개발(경력)", 3, true);
+        Candidate e5 = candidate(experienced, "EXP-2026-0005", "남도현", "AI", "AI연구(경력)", 4, true);
 
-        // 경력 1번: 포트폴리오 DONE → 직무 SCHEDULED → 인성 WAITING (진행 표시용)
-        Interview e1pf = interview(e1, InterviewType.PORTFOLIO, 1, InterviewStatus.DONE, day.minusDays(1).plusHours(14));
-        assign(e1pf, park, han);
-        completed(e1pf, e1, true, park, han);
-        Interview e1job = interview(e1, InterviewType.JOB, 2, InterviewStatus.SCHEDULED, day.plusHours(16));
-        assign(e1job, park, choi);
-        briefing(e1job, e1);
-        Interview e1ps = interview(e1, InterviewType.PERSONALITY, 3, InterviewStatus.WAITING, null);
-        assign(e1ps, kim, han);
+        // 경력 1번: 직무(1차) DONE → 인성(2차) SCHEDULED (진행 표시용. 인성의 사전 리포트에 1차 보고서의 "다음 차수에서 확인할 점"이 보인다)
+        Interview e1job = interview(e1, InterviewType.JOB, 1, InterviewStatus.DONE, day.minusDays(1).plusHours(14));
+        assign(e1job, park, han);
+        completed(e1job, e1, true, park, han);
+        Interview e1ps = interview(e1, InterviewType.PERSONALITY, 2, InterviewStatus.SCHEDULED, day.plusHours(16));
+        assign(e1ps, park, choi);
+        briefing(e1ps, e1);
 
-        Interview e2pf = interview(e2, InterviewType.PORTFOLIO, 1, InterviewStatus.SCHEDULED, day.plusHours(14));
-        assign(e2pf, choi, park);
-        briefing(e2pf, e2);
+        Interview e2job = interview(e2, InterviewType.JOB, 1, InterviewStatus.SCHEDULED, day.plusHours(14));
+        assign(e2job, choi, park);
+        briefing(e2job, e2);
 
-        Interview e3pf = interview(e3, InterviewType.PORTFOLIO, 1, InterviewStatus.EVALUATING, day.plusHours(11).plusMinutes(30));
-        assign(e3pf, lee, han);
-        List<Question> e3q = briefing(e3pf, e3);
-        Room e3room = room(e3pf, RoomStatus.ENDED);
+        // 경력 3번: 직무 평가 중(방은 끝났고 보고서 초안까지 있음, 면접관 평가는 아직)
+        Interview e3job = interview(e3, InterviewType.JOB, 1, InterviewStatus.EVALUATING, day.plusHours(11).plusMinutes(30));
+        assign(e3job, lee, han);
+        List<Question> e3q = briefing(e3job, e3);
+        Room e3room = room(e3job, RoomStatus.ENDED);
         transcript(e3room, e3q, 4);
-        aiEvaluation(e3pf);
-        report(e3pf, 1, ReportBasis.LIVE, e3q);
+        aiEvaluation(e3job);
+        report(e3job, 1, ReportBasis.LIVE, e3q);
 
-        Interview e4pf = interview(e4, InterviewType.PORTFOLIO, 1, InterviewStatus.WAITING, null);
-        assign(e4pf, kim, park);
+        Interview e4job = interview(e4, InterviewType.JOB, 1, InterviewStatus.WAITING, null);
+        assign(e4job, kim, park);
 
-        seedAdminStatsDemo(newGrad, day, new UserAccount[][] { { park, choi }, { lee, han }, { choi, park }, { jung, han },
+        // 경력 5번: 직무 진행 중(방 LIVE, 전사 일부).
+        // 운영 현황판에서 "예정 시간을 넘김"으로 보이게, 지금 기준 80분 전 예정 · 78분 전 시작(예정 길이 60분)으로 둔다.
+        Interview e5job = interview(e5, InterviewType.JOB, 1, InterviewStatus.IN_PROGRESS, Times.now().minusMinutes(80));
+        assign(e5job, choi, park);
+        List<Question> e5q = briefing(e5job, e5);
+        Room e5room = room(e5job, RoomStatus.LIVE);
+        e5room.setStartedAt(Times.now().minusMinutes(78));
+        transcript(e5room, e5q, 2);
+
+        seedAdminStatsDemo(experienced, day, new UserAccount[][] { { park, choi }, { lee, han }, { choi, park }, { kim, han },
                 { kim, park }, { lee, han }, { park, han } });
+    }
+
+    /** 신입의 끝난 면접: 준비된 질문(앞의 넷은 물어봄), 끝난 방, 면접관 평가. 전사·AI 평가·보고서는 없다. */
+    private void endedWithoutLive(Interview i, Candidate c, UserAccount... submitted) {
+        List<Question> questions = briefing(i, c);
+        for (int n = 0; n < 4 && n < questions.size(); n++) {
+            questions.get(n).setAsked(true);
+        }
+        room(i, RoomStatus.ENDED);
+        for (UserAccount u : submitted) {
+            evaluation(i, u);
+        }
     }
 
     /**
      * 관리자 집계 화면(운영 현황판, AI 품질, 면접관 편차)이 비어 보이지 않게 하는 추가 데이터.
-     * 신입 공채에 끝난 면접 6건(DONE 4, EVALUATING 2)과 늦게 시작한 진행 중 면접 1건을 더한다.
+     * 경력 채용에 끝난 면접 6건(DONE 4, EVALUATING 2)과 늦게 시작한 진행 중 면접 1건을 더한다.
      */
-    private void seedAdminStatsDemo(Recruitment newGrad, LocalDateTime day, UserAccount[][] pairs) {
+    private void seedAdminStatsDemo(Recruitment experienced, LocalDateTime day, UserAccount[][] pairs) {
         String[] names = { "권민서", "황준우", "안서현", "송지민", "류하람", "홍예서", "백도현" };
-        String[][] jobs = { { "SW", "SW개발" }, { "HW", "HW설계" }, { "AI", "AI연구" }, { "MGMT", "경영지원" } };
+        String[][] jobs = { { "SW", "SW개발(경력)" }, { "AI", "AI연구(경력)" }, { "HW", "HW설계(경력)" } };
         LocalDateTime now = Times.now();
         for (int n = 0; n < names.length; n++) {
             String[] j = jobs[n % jobs.length];
-            Candidate c = candidate(newGrad, String.format("2026H-9%03d", 13 + n), names[n], j[0], j[1], 12 + n, false);
+            Candidate c = candidate(experienced, String.format("EXP-2026-%04d", 6 + n), names[n], j[0], j[1], 5 + n, true);
             if (n == 6) {
                 // 예정보다 12분 늦게 시작한 진행 중 면접(전사는 방금까지 들어옴)
-                Interview late = interview(c, InterviewType.PT, 1, InterviewStatus.IN_PROGRESS, now.minusMinutes(20));
+                Interview late = interview(c, InterviewType.JOB, 1, InterviewStatus.IN_PROGRESS, now.minusMinutes(20));
                 assign(late, pairs[n][0], pairs[n][1]);
                 Room lateRoom = room(late, RoomStatus.LIVE);
                 lateRoom.setStartedAt(now.minusMinutes(8));
@@ -310,11 +329,11 @@ public class LocalSeedRunner implements ApplicationRunner {
                 continue;
             }
             boolean done = n < 4;
-            Interview pt = interview(c, InterviewType.PT, 1, done ? InterviewStatus.DONE : InterviewStatus.EVALUATING,
+            Interview first = interview(c, InterviewType.JOB, 1, done ? InterviewStatus.DONE : InterviewStatus.EVALUATING,
                     day.plusHours(8).plusMinutes(20L * n));
-            assign(pt, pairs[n][0], pairs[n][1]);
-            List<Question> questions = briefing(pt, c);
-            Room room = room(pt, RoomStatus.ENDED);
+            assign(first, pairs[n][0], pairs[n][1]);
+            List<Question> questions = briefing(first, c);
+            Room room = room(first, RoomStatus.ENDED);
             List<Utterance> utterances = transcript(room, questions, 5);
             // 화자 판정 방법을 섞는다: 규칙 판정, 사람이 고친 것, 정하지 못한 것
             utterances.get(1).setSpeakerMethod(SpeakerMethod.RULE);
@@ -326,28 +345,29 @@ public class LocalSeedRunner implements ApplicationRunner {
                 utterances.get(7).setSpeaker(Speaker.UNKNOWN);
                 utterances.get(7).setSpeakerMethod(SpeakerMethod.NONE);
             }
-            followUps(room, pt, 4 + n % 3, n % 3);
+            followUps(room, first, 4 + n % 3, n % 3);
 
-            AiEvaluation ai = aiEvaluation(pt);
+            AiEvaluation ai = aiEvaluation(first);
             if (n == 1) {
                 // AI 가 근거를 찾지 못해 점수를 내지 않은 항목
                 ((ObjectNode) ai.getScores().get(3)).putNull("score");
             }
-            aiJob(pt, JobType.AI_EVALUATION, JobStatus.SUCCEEDED);
-            evaluation(pt, pairs[n][0]);
+            // 방이 끝난 직후 AI 평가(35~50초) → 이어서 보고서(60~100초)
+            LocalDateTime evaluationDone = aiJob(first, JobType.AI_EVALUATION, JobStatus.SUCCEEDED, room.getEndedAt(), 35 + n * 3);
+            evaluation(first, pairs[n][0]);
             if (done) {
-                evaluation(pt, pairs[n][1]); // EVALUATING 인 면접은 한 명이 아직 제출하지 않았다.
+                evaluation(first, pairs[n][1]); // EVALUATING 인 면접은 한 명이 아직 제출하지 않았다.
             }
             if (n == 5) {
-                aiJob(pt, JobType.REPORT, JobStatus.FAILED); // 보고서 작업 실패 → 현황판의 JOB_FAILED
+                aiJob(first, JobType.REPORT, JobStatus.FAILED, evaluationDone, 120); // 보고서 작업 실패 → 현황판의 JOB_FAILED
                 continue;
             }
-            report(pt, 1, ReportBasis.LIVE, questions);
-            aiJob(pt, JobType.REPORT, JobStatus.SUCCEEDED);
+            report(first, 1, ReportBasis.LIVE, questions);
+            aiJob(first, JobType.REPORT, JobStatus.SUCCEEDED, evaluationDone, 60 + n * 8);
             if (n % 2 == 0) {
                 room.setPostSttModel("seed-stt");
-                report(pt, 2, ReportBasis.REFINED, questions);
-                aiJob(pt, JobType.REPORT, JobStatus.SUCCEEDED);
+                report(first, 2, ReportBasis.REFINED, questions);
+                aiJob(first, JobType.REPORT, JobStatus.SUCCEEDED, room.getEndedAt().plusMinutes(3), 75 + n * 5);
             }
         }
     }
@@ -374,20 +394,25 @@ public class LocalSeedRunner implements ApplicationRunner {
         }
     }
 
-    private void aiJob(Interview i, JobType type, JobStatus status) {
+    /**
+     * 끝난 AI 작업 한 건. 접수(createdAt) → 2초 기다린 뒤 시작 → runSeconds 초 뒤 끝난 것으로 넣는다
+     * (시스템 상태의 "기다리는 시간"이 0초로 보이지 않게). 끝난 시각을 돌려준다.
+     */
+    private LocalDateTime aiJob(Interview i, JobType type, JobStatus status, LocalDateTime createdAt, int runSeconds) {
         AiJob job = new AiJob();
         job.setType(type);
         job.setStatus(status);
         job.setInterviewId(i.getId());
         job.setWorkerId("seed");
-        job.setCreatedAt(Times.now());
-        job.setStartedAt(Times.now());
-        job.setFinishedAt(Times.now());
+        job.setCreatedAt(createdAt);
+        job.setStartedAt(createdAt.plusSeconds(2));
+        job.setFinishedAt(createdAt.plusSeconds(2L + runSeconds));
         if (status == JobStatus.FAILED) {
             job.setErrorCode("MODEL_FAILED");
             job.setErrorMessage("모델이 응답하지 않았습니다. (시드 데이터)");
         }
         aiJobRepository.save(job);
+        return job.getFinishedAt();
     }
 
     // ------------------------------------------------------------------ 기준 데이터
@@ -403,20 +428,17 @@ public class LocalSeedRunner implements ApplicationRunner {
     }
 
     private void seedCriteria() {
-        String[][] pt = { { "PROBLEM_SOLVING", "문제 해결", "문제를 정의하고 해결 과정을 논리적으로 설명하는가" },
+        String[][] newGradJob = { { "PROBLEM_SOLVING", "문제 해결", "문제를 정의하고 해결 과정을 논리적으로 설명하는가" },
                 { "LOGIC", "논리성", "주장과 근거가 일관되고 구조적인가" }, { "JOB_KNOWLEDGE", "직무 지식", "직무에 필요한 기초 지식을 갖췄는가" },
                 { "COMMUNICATION", "전달력", "핵심을 간결하고 이해하기 쉽게 전달하는가" } };
         String[][] personality = { { "TEAMWORK", "협업", "다른 사람과 함께 일한 경험과 태도" }, { "INTEGRITY", "성실·정직", "책임감 있게 일하고 사실대로 말하는가" },
                 { "GROWTH", "성장 가능성", "배우려는 태도와 피드백 수용" }, { "COMMUNICATION", "소통", "상대의 말을 듣고 분명하게 답하는가" } };
-        String[][] portfolio = { { "EXPERTISE", "전문성", "맡았던 업무의 깊이와 기술 수준" }, { "OWNERSHIP", "주도성", "스스로 문제를 찾고 끝까지 책임진 경험" },
-                { "IMPACT", "성과", "결과를 수치와 사실로 설명하는가" }, { "COMMUNICATION", "전달력", "복잡한 내용을 구조적으로 설명하는가" } };
-        String[][] job = { { "JOB_KNOWLEDGE", "직무 지식", "직무의 핵심 개념과 원리를 이해하는가" }, { "PROBLEM_SOLVING", "문제 해결", "실무 문제를 풀어 가는 방식" },
+        String[][] experiencedJob = { { "JOB_KNOWLEDGE", "직무 지식", "직무의 핵심 개념과 원리를 이해하는가" }, { "PROBLEM_SOLVING", "문제 해결", "실무 문제를 풀어 가는 방식" },
                 { "EXPERTISE", "전문성", "경험에서 나온 판단과 깊이" }, { "COLLABORATION", "협업", "다른 직군·팀과 일하는 방식" } };
+        criteria(Track.NEW_GRAD, InterviewType.JOB, newGradJob);
+        criteria(Track.EXPERIENCED, InterviewType.JOB, experiencedJob);
         for (Track track : Track.values()) {
-            criteria(track, InterviewType.PT, pt);
             criteria(track, InterviewType.PERSONALITY, personality);
-            criteria(track, InterviewType.PORTFOLIO, portfolio);
-            criteria(track, InterviewType.JOB, job);
         }
     }
 
@@ -456,26 +478,26 @@ public class LocalSeedRunner implements ApplicationRunner {
     }
 
     private void seedQuestionBank() {
-        bank("SW", InterviewType.PT, "CS기초", "프로세스와 스레드의 차이를 설명하고, 스레드를 쓸 때 주의할 점을 말해 주세요.");
-        bank("SW", InterviewType.PT, "CS기초", "해시 테이블의 충돌을 처리하는 방법을 비교해 주세요.");
+        bank("SW", InterviewType.JOB, "CS기초", "프로세스와 스레드의 차이를 설명하고, 스레드를 쓸 때 주의할 점을 말해 주세요.");
+        bank("SW", InterviewType.JOB, "CS기초", "해시 테이블의 충돌을 처리하는 방법을 비교해 주세요.");
         bank("SW", InterviewType.JOB, "설계", "트래픽이 10배로 늘면 지금 설계에서 어디가 먼저 문제가 됩니까?");
         bank("SW", InterviewType.JOB, "데이터베이스", "인덱스가 오히려 성능을 떨어뜨리는 경우를 설명해 주세요.");
         bank("SW", null, "협업", "코드 리뷰에서 의견이 갈렸을 때 어떻게 정리했습니까?");
-        bank("SW", InterviewType.PORTFOLIO, "장애 대응", "가장 기억에 남는 장애와 그 뒤에 바꾼 것을 말해 주세요.");
-        bank("HW", InterviewType.PT, "회로", "풀업 저항의 값을 정할 때 무엇을 고려합니까?");
-        bank("HW", InterviewType.PT, "회로", "신호 반사가 생기는 이유와 줄이는 방법을 설명해 주세요.");
+        bank("SW", InterviewType.JOB, "장애 대응", "가장 기억에 남는 장애와 그 뒤에 바꾼 것을 말해 주세요.");
+        bank("HW", InterviewType.JOB, "회로", "풀업 저항의 값을 정할 때 무엇을 고려합니까?");
+        bank("HW", InterviewType.JOB, "회로", "신호 반사가 생기는 이유와 줄이는 방법을 설명해 주세요.");
         bank("HW", InterviewType.JOB, "검증", "오실로스코프로 타이밍 문제를 찾았던 경험을 말해 주세요.");
         bank("HW", InterviewType.JOB, "설계", "전원 설계에서 디커플링 커패시터를 배치하는 기준은 무엇입니까?");
         bank("HW", null, "양산", "시제품과 양산품의 차이 때문에 생긴 문제를 겪은 적이 있습니까?");
-        bank("HW", InterviewType.PORTFOLIO, "설계", "가장 어려웠던 보드 설계와 그 이유를 말해 주세요.");
-        bank("AI", InterviewType.PT, "기계학습", "과적합을 확인하는 방법과 줄이는 방법을 설명해 주세요.");
-        bank("AI", InterviewType.PT, "기계학습", "정밀도와 재현율 가운데 무엇을 우선할지 어떻게 정합니까?");
+        bank("HW", InterviewType.JOB, "설계", "가장 어려웠던 보드 설계와 그 이유를 말해 주세요.");
+        bank("AI", InterviewType.JOB, "기계학습", "과적합을 확인하는 방법과 줄이는 방법을 설명해 주세요.");
+        bank("AI", InterviewType.JOB, "기계학습", "정밀도와 재현율 가운데 무엇을 우선할지 어떻게 정합니까?");
         bank("AI", InterviewType.JOB, "실험", "실험 결과가 재현되지 않을 때 무엇부터 확인합니까?");
         bank("AI", InterviewType.JOB, "서빙", "모델 응답 시간을 줄였던 경험을 말해 주세요.");
         bank("AI", null, "데이터", "학습 데이터의 품질 문제를 어떻게 찾았습니까?");
-        bank("AI", InterviewType.PORTFOLIO, "제품화", "연구 결과를 제품에 넣으면서 포기한 것은 무엇입니까?");
-        bank("MGMT", InterviewType.PT, "회계", "발생주의와 현금주의의 차이를 예를 들어 설명해 주세요.");
-        bank("MGMT", InterviewType.PT, "분석", "비용이 갑자기 늘었을 때 원인을 찾는 순서를 말해 주세요.");
+        bank("AI", InterviewType.JOB, "제품화", "연구 결과를 제품에 넣으면서 포기한 것은 무엇입니까?");
+        bank("MGMT", InterviewType.JOB, "회계", "발생주의와 현금주의의 차이를 예를 들어 설명해 주세요.");
+        bank("MGMT", InterviewType.JOB, "분석", "비용이 갑자기 늘었을 때 원인을 찾는 순서를 말해 주세요.");
         bank("MGMT", InterviewType.JOB, "문서", "보고서를 쓸 때 가장 먼저 정하는 것은 무엇입니까?");
         bank("MGMT", InterviewType.JOB, "규정", "규정과 현장의 요구가 부딪혔을 때 어떻게 처리했습니까?");
         bank("MGMT", null, "소통", "다른 부서의 협조를 얻기 어려웠던 경험을 말해 주세요.");
@@ -529,6 +551,7 @@ public class LocalSeedRunner implements ApplicationRunner {
         c.setTrack(r.getTrack());
         c.setJobCode(jobCode);
         c.setJobTitle(jobTitle);
+        c.setApplicantType(experienced ? EXPERIENCED_TYPES[n % EXPERIENCED_TYPES.length] : NEW_GRAD_TYPES[n % NEW_GRAD_TYPES.length]);
         c.setProfile(p);
         // 원본에는 있었지만 저장하지 않은 항목(값은 어디에도 없다)
         c.setBlindedFields(new ArrayList<String>(Arrays.asList("gender", "birthDate", "family")));
@@ -596,6 +619,8 @@ public class LocalSeedRunner implements ApplicationRunner {
         b.setSummary(summary);
         b.setExcluded(new ArrayList<String>(c.getBlindedFields()));
         briefingRepository.save(b);
+        // 이 사전 리포트를 만든 작업 기록(어제 접수돼 25~40초 걸린 것으로 둔다).
+        aiJob(i, JobType.BRIEFING, JobStatus.SUCCEEDED, Times.now().minusDays(1).plusMinutes(i.getId() % 60), 25 + (int) (i.getId() % 4) * 5);
 
         List<Question> questions = new ArrayList<Question>();
         questions.add(question(i, 1, QuestionSource.JD, "직무", c.getJobTitle() + " 직무에서 가장 중요하다고 생각하는 역량은 무엇입니까?", "직무 이해도 확인"));
@@ -604,6 +629,13 @@ public class LocalSeedRunner implements ApplicationRunner {
         questions.add(question(i, 4, QuestionSource.RESUME, "자기소개서", "문제를 작게 나눠 원인을 찾았던 사례를 하나 설명해 주세요.", "문제 해결 방식 확인"));
         questions.add(question(i, 5, QuestionSource.JD, "협업", "팀원과 의견이 달랐을 때 어떻게 결정했습니까?", "협업 방식 확인"));
         questions.add(question(i, 6, QuestionSource.BANK, "마무리", "마지막으로 하고 싶은 말이나 질문이 있습니까?", "질문 은행에서 고름"));
+        if (i.getTrack() == Track.NEW_GRAD) {
+            // 신입 면접은 실시간 기능을 쓰지 않으므로(app.live.new-grad-enabled) 예상 꼬리질문을 미리 넣어 둔다.
+            predictedFollowUp(i, 7, questions.get(1), "그 역할에서 혼자 결정한 것과 팀이 함께 결정한 것을 나눠 말해 주세요.");
+            predictedFollowUp(i, 8, questions.get(1), "맡은 부분에서 가장 오래 걸린 일은 무엇이었습니까?");
+            predictedFollowUp(i, 9, questions.get(2), "측정할 때 조건을 어떻게 같게 맞췄습니까?");
+            predictedFollowUp(i, 10, questions.get(2), "40%가 아닌 다른 결과가 나온 측정도 있었습니까?");
+        }
         return questions;
     }
 
@@ -617,6 +649,11 @@ public class LocalSeedRunner implements ApplicationRunner {
         q.setOrderNo(orderNo);
         q.setCreatedAt(Times.now());
         return questionRepository.save(q);
+    }
+
+    private void predictedFollowUp(Interview i, int orderNo, Question parent, String text) {
+        Question q = question(i, orderNo, QuestionSource.FOLLOW_UP, QuestionService.PREDICTED_FOLLOW_UP_CATEGORY, text, null);
+        q.setParentQuestionId(parent.getId());
     }
 
     private Room room(Interview i, RoomStatus status) {

@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
  * - 직무 코드는 그 채용에 등록된 것이어야 한다(UNKNOWN_JOB_CODE).
  * - 같은 입력 안에서 수험번호가 겹치면 뒤의 행이 오류다(DUPLICATE_IN_FILE).
  * - 같은 채용에 이미 있는 수험번호면 새로 만들지 않고 갱신한다.
+ * - 면접자 유형은 입력에 값이 있을 때만 넣는다(없으면 새 면접자는 null, 기존 면접자는 그대로).
  */
 @Service
 @RequiredArgsConstructor
@@ -82,6 +83,10 @@ public class CandidateImportService {
             candidate.setJobCode(job.getJobCode());
             // 직무명은 등록된 JD 의 제목을 따른다(파일의 직무명이 달라도 코드가 기준).
             candidate.setJobTitle(job.getTitle());
+            // 유형은 입력에 값이 있을 때만 바꾼다(유형 열이 없는 파일을 다시 올려도 이미 넣은 유형이 지워지지 않게).
+            if (row.getApplicantType() != null) {
+                candidate.setApplicantType(row.getApplicantType());
+            }
             candidate.setProfile(row.getProfile());
             candidate.setBlindedFields(row.getBlindedFields());
             candidate.setSourceType(sourceType);

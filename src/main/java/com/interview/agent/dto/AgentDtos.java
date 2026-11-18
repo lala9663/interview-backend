@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.interview.candidate.ApplicantType;
 import com.interview.candidate.CandidateProfile;
 import com.interview.interview.InterviewType;
 import com.interview.recruitment.Track;
@@ -46,6 +48,27 @@ public final class AgentDtos {
         private CandidatePart candidate;
         private List<BankItem> questionBank = new ArrayList<BankItem>();
         private QuestionCount questionCount;
+        /** 면접자 유형(선택). 모르면 보내지 않는다. */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private ApplicantType applicantType;
+        /** 이 면접에 적용할 페르소나(선택). 없으면 보내지 않는다. */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private PersonaPart persona;
+        /** 질문마다 미리 만들 예상 꼬리질문의 수(선택). 실시간 기능을 쓰지 않는 면접에서만 보낸다. */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private Integer predictedFollowUps;
+    }
+
+    /** 페르소나 가운데 Agent 가 질문의 표현에 쓰는 부분(4.1 의 persona, 5장 context 의 persona). */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PersonaPart {
+        private String name;
+        private String description;
+        private String questionType;
+        private String followUpType;
+        private String guard;
     }
 
     @Data
@@ -73,12 +96,37 @@ public final class AgentDtos {
 
     @Data
     @NoArgsConstructor
-    @AllArgsConstructor
     public static class GeneratedQuestion {
         private String source;
         private String category;
         private String text;
         private String intent;
+        /** 예상 꼬리질문의 글(선택). 요청에 predictedFollowUps 를 보냈을 때 온다. */
+        private List<String> followUps = new ArrayList<String>();
+
+        public GeneratedQuestion(String source, String category, String text, String intent) {
+            this.source = source;
+            this.category = category;
+            this.text = text;
+            this.intent = intent;
+        }
+    }
+
+    // ---- GET /health (4장). 예외 없이 돌려주는 값이라 Agent 에 닿지 못하면 status 가 DOWN 이다. ----
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Health {
+        /** UP | DOWN */
+        private String status;
+        /** 선택 항목(ServiceStatus 값: OK | DEGRADED | DOWN). Agent 가 주지 않으면 null. */
+        private String llmStatus;
+        private String sttStatus;
+
+        public boolean isUp() {
+            return "UP".equalsIgnoreCase(status);
+        }
     }
 
     // ---- 4.2 evaluations ----

@@ -20,6 +20,9 @@ import com.interview.job.AiJob;
 import com.interview.job.AiJobRepository;
 import com.interview.job.JobStatus;
 import com.interview.job.JobType;
+import com.interview.persona.Persona;
+import com.interview.persona.PersonaDtos;
+import com.interview.persona.PersonaService;
 import com.interview.report.Report;
 import com.interview.report.ReportRepository;
 import com.interview.room.Room;
@@ -31,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Interview 엔티티 묶음을 API 명세의 Interview 응답으로 바꾼다.
- * 목록에서 N+1 조회가 나지 않도록 딸린 데이터(면접자, 면접관, 방, 브리핑, 보고서)를 한꺼번에 읽는다.
+ * 목록에서 N+1 조회가 나지 않도록 딸린 데이터(면접자, 면접관, 방, 브리핑, 보고서, 페르소나)를 한꺼번에 읽는다.
  */
 @Component
 @RequiredArgsConstructor
@@ -44,6 +47,8 @@ public class InterviewAssembler {
     private final BriefingRepository briefingRepository;
     private final ReportRepository reportRepository;
     private final AiJobRepository aiJobRepository;
+    private final PersonaService personaService;
+    private final LiveProperties liveProps;
 
     public InterviewDto toDto(Interview interview) {
         return toDtos(Collections.singletonList(interview)).get(0);
@@ -104,13 +109,15 @@ public class InterviewAssembler {
             }
         }
         Map<Long, UserAccount> users = userService.mapByIds(userIds);
+        PersonaService.Resolver personas = personaService.resolver();
 
         for (Interview i : interviews) {
             InterviewDto dto = new InterviewDto();
             dto.setId(i.getId());
             Candidate c = candidates.get(i.getCandidateId());
             if (c != null) {
-                dto.setCandidate(new InterviewDto.CandidateRef(c.getId(), c.getName(), c.getApplicantNo(), c.getJobTitle()));
+                dto.setCandidate(new InterviewDto.CandidateRef(c.getId(), c.getName(), c.getApplicantNo(), c.getJobTitle(),
+                        c.getApplicantType()));
             }
             dto.setTrack(i.getTrack());
             dto.setType(i.getType());
@@ -143,6 +150,10 @@ public class InterviewAssembler {
                 dto.setReportStatus(JobStatus.SUCCEEDED);
             }
             dto.setReportBasis(report == null ? null : report.getBasis());
+            dto.setLiveEnabled(liveProps.enabledFor(i.getTrack()));
+            Persona persona = personas.resolve(i.getPersonaId(),
+                    room != null && InterviewPersonas.locks(room.getStatus()));
+            dto.setPersona(persona == null ? null : new PersonaDtos.Summary(persona));
             result.add(dto);
         }
         return result;

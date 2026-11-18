@@ -68,7 +68,7 @@ class BlindFieldTest extends ApiTestSupport {
 
         // Agent 로 나가는 브리핑 요청: 블라인드 값도, 이름·수험번호도 없다.
         long interviewId = api(HttpMethod.POST, admin, "/api/v1/candidates/" + candidate.getId() + "/interviews",
-                "{\"type\":\"PT\",\"scheduledAt\":\"2026-11-20T10:00:00+09:00\"}").expect(200).json.get("id").asLong();
+                "{\"type\":\"JOB\",\"scheduledAt\":\"2026-11-20T10:00:00+09:00\"}").expect(200).json.get("id").asLong();
         fakeAgent.clearRecorded();
         final long jobId = api(HttpMethod.POST, admin, "/api/v1/interviews/" + interviewId + "/briefing/generate", null)
                 .expect(202).json.get("jobId").asLong();

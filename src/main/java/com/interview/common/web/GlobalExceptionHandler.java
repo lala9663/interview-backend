@@ -7,6 +7,7 @@ import javax.validation.ConstraintViolationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -69,6 +70,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethod(HttpRequestMethodNotSupportedException e) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(new ErrorResponse("METHOD_NOT_ALLOWED", "지원하지 않는 메서드입니다."));
+    }
+
+    /** 유니크 제약 등 DB 제약에 걸림(같은 것을 동시에 두 번 저장한 경우 등). 500 이 아니라 409 로 답한다. */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException e) {
+        log.warn("DB 제약 위반: {}", e.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("CONFLICT", "같은 내용이 이미 저장됐거나 동시에 저장됐습니다. 새로 고친 뒤 다시 해 주세요."));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

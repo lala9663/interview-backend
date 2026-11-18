@@ -16,6 +16,11 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     List<Room> findByStatus(RoomStatus status);
 
+    /** 주어진 기간에 시작한 방들의 시작 시각(채용 구분 없이 전체). 시스템 상태의 일별 면접 세션에 쓴다. */
+    @Query("select r.startedAt from Room r where r.startedAt >= :from and r.startedAt < :to")
+    List<java.time.LocalDateTime> findStartedAtBetween(@Param("from") java.time.LocalDateTime from,
+            @Param("to") java.time.LocalDateTime to);
+
     @Query("select r from Room r where r.interviewId in (select i.id from Interview i where i.recruitmentId = :rid)")
     List<Room> findByRecruitmentId(@Param("rid") Long recruitmentId);
 }

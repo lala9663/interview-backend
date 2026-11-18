@@ -7,6 +7,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.interview.common.Times;
 import com.interview.job.JobStatus;
+import com.interview.report.PreviousRoundChecks;
 
 import lombok.Getter;
 
@@ -19,16 +20,19 @@ public class BriefingDto {
     private final String model;
     private final JsonNode summary;
     private final List<String> excluded;
+    /** 같은 면접자의 바로 앞 차수 보고서의 nextRoundChecks. 없으면 null. */
+    private final PreviousRoundChecks previousRoundChecks;
 
-    private BriefingDto(Briefing b) {
+    private BriefingDto(Briefing b, PreviousRoundChecks previousRoundChecks) {
         this.status = b == null ? null : b.getStatus();
         this.generatedAt = b == null ? null : Times.toOffset(b.getGeneratedAt());
         this.model = b == null ? null : b.getModel();
         this.summary = b == null ? null : b.getSummary();
         this.excluded = b == null ? new ArrayList<String>() : new ArrayList<String>(b.getExcluded());
+        this.previousRoundChecks = previousRoundChecks;
     }
 
-    public static BriefingDto from(Briefing b) {
-        return new BriefingDto(b);
+    public static BriefingDto from(Briefing b, PreviousRoundChecks previousRoundChecks) {
+        return new BriefingDto(b, previousRoundChecks);
     }
 }

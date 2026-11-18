@@ -24,12 +24,13 @@ public class CandidateController {
 
     @GetMapping("/recruitments/{id}/candidates")
     public PageResponse<CandidateDtos.ListItem> list(@PathVariable Long id,
-            @RequestParam(required = false) String jobCode, @RequestParam(required = false) String q,
+            @RequestParam(required = false) String jobCode,
+            @RequestParam(required = false) ApplicantType applicantType, @RequestParam(required = false) String q,
             @RequestParam(required = false) InterviewStatus status,
             @RequestParam(required = false) InterviewType type, @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         recruitmentService.get(id);
-        return candidateService.list(id, jobCode, q, status, type, page, size);
+        return candidateService.list(id, jobCode, applicantType, q, status, type, page, size);
     }
 
     @GetMapping("/candidates/{id}")

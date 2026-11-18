@@ -39,6 +39,8 @@ public class SampleExcelGenerator {
             "건우", "다은", "현우", "채원", "지호", "유나", "준서", "소율" };
     private static final String[][] JOBS = { { "SW", "SW개발" }, { "HW", "HW설계" }, { "AI", "AI연구" },
             { "MGMT", "경영지원" } };
+    /** 신입 공채의 면접자 유형(엑셀에는 한국어 이름으로 적는다). */
+    private static final String[] APPLICANT_TYPES = { "공채", "공채", "장학생", "공채", "인턴 전환" };
     private static final String[] SCHOOLS = { "한빛대학교", "새솔대학교", "가람대학교", "누리대학교", "미르공과대학교" };
     private static final String[][] MAJORS = { { "컴퓨터공학", "자료구조, 운영체제, 데이터베이스, 컴퓨터네트워크" },
             { "전자공학", "회로이론, 디지털논리회로, 신호및시스템, 반도체공학" }, { "인공지능학", "기계학습, 선형대수, 확률통계, 딥러닝" },
@@ -105,6 +107,7 @@ public class SampleExcelGenerator {
         v.put("name", n == ERROR_NO_NAME ? "" : name);
         v.put("jobCode", n == ERROR_BAD_JOB ? "XX" : JOBS[jobIndex][0]);
         v.put("jobTitle", JOBS[jobIndex][1]);
+        v.put("applicantType", APPLICANT_TYPES[n % APPLICANT_TYPES.length]);
 
         // 블라인드 항목: 업로드하면 버려지는 값이다. 버려지는 것을 확인할 수 있게 일부러 채운다.
         v.put("blind.gender", n % 2 == 0 ? "여" : "남");

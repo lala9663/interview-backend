@@ -41,6 +41,7 @@ columns:
 | --- | --- |
 | `applicantNo`, `name`, `jobCode` | 면접자 기본 항목(필수) |
 | `jobTitle` | 읽기만 한다. 저장되는 직무명은 등록된 직무(JD)의 제목이다 |
+| `applicantType` | 면접자 유형(선택 열, 기본 헤더 "지원유형"). 장학생 / 공채 / 인턴 전환 / 일반 경력 / 박사 / 경력 석사(공백 무시) 또는 `SCHOLARSHIP` / `OPEN` / `INTERN` / `CAREER` / `PHD` / `CAREER_MASTER`. 열이 없거나, 비었거나, 모르는 값이면 행 오류 없이 유형을 넣지 않는다. 이미 유형이 있는 면접자는 그대로 둔다 |
 | `education.degree` / `.school` / `.major` / `.gpa` | `profile.education[0]` |
 | `courses`, `certificates` | 쉼표·세미콜론·줄바꿈으로 나눠 `profile.courses` / `profile.certificates` |
 | `essay` | `profile.essays[]` 에 `{ title, text }`. 컬럼을 여러 개 둘 수 있다 |

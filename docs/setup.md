@@ -18,6 +18,8 @@
 - 포트 8080, 프로파일 `local`.
 - DB: `./data/interview.mv.db` (H2 파일, Oracle 호환 모드). 스키마는 자동 생성(`ddl-auto=update`).
 - 빈 DB 면 시드 데이터가 들어간다. 다시 넣으려면 서버를 끄고 `data/` 폴더를 지운다.
+- 시드는 기본 설정에 맞춰져 있다. 신입 채용(실시간 기능을 쓰지 않음)에는 사전 리포트, 준비된 질문과 예상 꼬리질문, 끝난 방, 면접관 평가만 있다. 진행 중인 방, 전사, 꼬리질문 후보, AI 평가, 보고서, AI 작업 기록은 경력 채용에 있다. 운영 현황·AI 품질·면접관 편차 화면은 경력 채용을 골라야 볼거리가 있다.
+- 면접 유형에서 `PT`·`PORTFOLIO` 를 없애기 전에 만든 `data/` 는 그 값이 든 면접 행 때문에 읽을 때 오류가 난다. 서버를 끄고 `data/` 를 지운 뒤 다시 띄운다.
 - 시드 면접의 날짜는 서버를 띄운 날로 옮겨진다(`app.seed.shift-dates-to-today`). 그래서 며칠 뒤에 띄워도 "오늘 면접"이 보인다.
 - Agent 없이 AI 작업까지 보려면: `AGENT_MODE=fake ./gradlew bootRun` (PowerShell: `$env:AGENT_MODE='fake'; .\gradlew.bat bootRun`)
 

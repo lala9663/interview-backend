@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.interview.agent.dto.AgentDtos;
 import com.interview.auth.CurrentUser;
 import com.interview.briefing.BriefingService;
+import com.interview.common.ApiException;
 import com.interview.common.Times;
 import com.interview.common.json.Json;
 import com.interview.evaluation.AiEvaluationService;
@@ -19,6 +22,8 @@ import com.interview.interview.Interview;
 import com.interview.interview.InterviewAccess;
 import com.interview.interview.InterviewContext;
 import com.interview.interview.InterviewRepository;
+import com.interview.interview.InterviewStatus;
+import com.interview.interview.LiveProperties;
 import com.interview.job.AiJob;
 import com.interview.job.AiJobService;
 import com.interview.job.JobType;
@@ -39,6 +44,9 @@ public class ReportService {
     private final BriefingService briefingService;
     private final AiEvaluationService aiEvaluationService;
     private final AiJobService jobService;
+    private final LiveProperties liveProps;
+
+    private static final Logger log = LoggerFactory.getLogger(ReportService.class);
 
     /** 최신 보고서. */
     @Transactional(readOnly = true)
@@ -62,10 +70,54 @@ public class ReportService {
         return items;
     }
 
-    /** 다시 만들기. 사후 STT 보정본이 있으면 REFINED, 없으면 LIVE 기준이다. */
+    /**
+     * 같은 면접자의 바로 앞 차수(seq - 1, 취소된 면접 제외) 면접의 최신 보고서에 nextRoundChecks 가 있으면 돌려준다.
+     * 앞 차수가 없거나, 보고서가 없거나, 항목이 없으면 null. 읽다가 예외가 나도 null(로그만 남긴다).
+     * (API 명세 2.6 의 previousRoundChecks)
+     */
+    public PreviousRoundChecks previousRoundChecks(Long interviewId) {
+        Interview interview = interviewAccess.requireExisting(interviewId);
+        try {
+            return readPreviousRoundChecks(interview);
+        } catch (RuntimeException e) {
+            // 앞 차수 보고서를 읽지 못해도(저장된 content 가 깨진 경우 등) 사전 리포트 조회는 되어야 한다.
+            log.warn("앞 차수 보고서의 nextRoundChecks 를 읽지 못했습니다. interviewId={}", interviewId, e);
+            return null;
+        }
+    }
+
+    private PreviousRoundChecks readPreviousRoundChecks(Interview interview) {
+        for (Interview prev : interviewRepository.findByCandidateIdOrderBySeqAsc(interview.getCandidateId())) {
+            if (prev.getSeq() != interview.getSeq() - 1 || prev.getStatus() == InterviewStatus.CANCELED) {
+                continue;
+            }
+            Report report = reportRepository.findFirstByInterviewIdOrderByVersionDesc(prev.getId()).orElse(null);
+            if (report == null || report.getContent() == null) {
+                continue;
+            }
+            List<String> items = new ArrayList<String>();
+            for (JsonNode check : report.getContent().path("nextRoundChecks")) {
+                if (check.isTextual() && !check.asText().trim().isEmpty()) {
+                    items.add(check.asText());
+                }
+            }
+            if (!items.isEmpty()) {
+                return new PreviousRoundChecks(prev.getSeq(), prev.getType(), items);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 다시 만들기. 사후 STT 보정본이 있으면 REFINED, 없으면 LIVE 기준이다.
+     * 실시간 기능을 쓰지 않는 면접(liveEnabled = false)은 보고서를 만들지 않으므로 409 LIVE_DISABLED.
+     */
     @Transactional
     public AiJob regenerate(Long interviewId, CurrentUser user) {
-        interviewAccess.requireWritable(interviewId, user);
+        Interview interview = interviewAccess.requireWritable(interviewId, user);
+        if (!liveProps.enabledFor(interview.getTrack())) {
+            throw ApiException.conflict("LIVE_DISABLED", "실시간 기능을 쓰지 않는 면접이라 보고서를 만들지 않습니다.");
+        }
         return submit(interviewId, transcriptService.hasRefined(interviewId) ? ReportBasis.REFINED : ReportBasis.LIVE);
     }
 

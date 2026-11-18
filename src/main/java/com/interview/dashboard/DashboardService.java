@@ -69,16 +69,17 @@ public class DashboardService {
 
         // 보고서 대기: 방이 끝난 면접(EVALUATING, DONE) 가운데 보고서가 아직 없는 것.
         // DONE 은 보통 보고서가 있으므로, 대기 중인 것은 대부분 EVALUATING 쪽에 있다.
+        // 실시간 기능을 쓰지 않는 면접(liveEnabled = false)은 보고서를 만들지 않으므로 대기로 세지 않는다.
         List<InterviewDto> pendingReports = new ArrayList<InterviewDto>();
         for (InterviewDto dto : evaluating.getItems()) {
-            if (dto.getReportBasis() == null) {
+            if (dto.getReportBasis() == null && dto.isLiveEnabled()) {
                 pendingReports.add(dto);
             }
         }
         PageResponse<InterviewDto> done = interviewService.list(mine, null, InterviewStatus.DONE, recruitmentId, 0, LIMIT,
                 user);
         for (InterviewDto dto : done.getItems()) {
-            if (dto.getReportBasis() == null) {
+            if (dto.getReportBasis() == null && dto.isLiveEnabled()) {
                 pendingReports.add(dto);
             }
         }

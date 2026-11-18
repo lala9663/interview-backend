@@ -9,13 +9,15 @@
 | `IV_USER_ACCOUNT` | `user.UserAccount` | 사용자(면접관·관리자), 담당 직무 코드 | `EMPLOYEE_NO` |
 | `IV_RECRUITMENT` | `recruitment.Recruitment` | 채용(공고), 트랙 | |
 | `IV_JOB_POSTING` | `recruitment.JobPosting` | 채용별 직무와 JD(`JD_TEXT` CLOB) | `RECRUITMENT_ID, JOB_CODE` |
-| `IV_CANDIDATE` | `candidate.Candidate` | 면접자. `PROFILE_JSON`(CLOB), `BLINDED_FIELDS` | `RECRUITMENT_ID, APPLICANT_NO` |
+| `IV_CANDIDATE` | `candidate.Candidate` | 면접자. `PROFILE_JSON`(CLOB), `BLINDED_FIELDS`, `APPLICANT_KIND`(면접자 유형, 모르면 NULL) | `RECRUITMENT_ID, APPLICANT_NO` |
 | `IV_UPLOAD_BATCH` | `upload.UploadBatch` | 업로드 이력(행 수) | |
 | `IV_UPLOAD_ERROR` | `upload.UploadError` | 업로드 실패 행 | |
-| `IV_INTERVIEW` | `interview.Interview` | 면접(유형, 차수, 방식, 상태, 일정) | |
+| `IV_INTERVIEW` | `interview.Interview` | 면접(유형, 차수, 방식, 상태, 일정), `PERSONA_ID`(고른 페르소나, 고르지 않았으면 NULL) | |
+| `IV_PERSONA` | `persona.Persona` | 면접 페르소나. 만든 순서는 `ID` 순서 | `NAME` |
 | `IV_INTERVIEW_ASSIGNEE` | `interview.InterviewAssignee` | 면접관 배정(`MATCHED_BY`) | `INTERVIEW_ID, USER_ID` |
-| `IV_BRIEFING` | `briefing.Briefing` | 사전 리포트. `SUMMARY_JSON`(CLOB) | `INTERVIEW_ID` |
-| `IV_QUESTION` | `question.Question` | 면접별 질문 | |
+| `IV_BRIEFING` | `briefing.Briefing` | 사전 리포트. `SUMMARY_JSON`(CLOB), `PERSONA_ID`(만들 때 적용한 페르소나, 없었으면 NULL) | `INTERVIEW_ID` |
+| `IV_QUESTION` | `question.Question` | 면접별 질문. 예상 꼬리질문은 `SOURCE_KIND` = FOLLOW_UP, `PARENT_QUESTION_ID` = 그 질문, `CATEGORY` = "예상 꼬리질문" | |
+| `IV_QUESTION_FEEDBACK` | `question.QuestionFeedback` | 준비된 질문에 대한 면접관의 의견(`OVERALL`, `VOTES_JSON` CLOB) | `INTERVIEW_ID, USER_ID` |
 | `IV_QUESTION_BANK` | `questionbank.QuestionBankItem` | 질문 은행 | |
 | `IV_ROOM` | `room.Room` | 면접 방 | `INTERVIEW_ID` |
 | `IV_UTTERANCE` | `room.Utterance` | 확정 전사(`RAW_TEXT`, `REFINED_TEXT` CLOB, `SOURCE_KIND` LIVE/POST) | `ROOM_ID, SEQ_NO` |
@@ -37,6 +39,8 @@
 - 시각은 업무 시간대(`app.time-zone`, 기본 Asia/Seoul)의 값으로 TIMESTAMP 에 저장한다(시간대 정보 없음).
 - VARCHAR2 는 `(n CHAR)` 로 만들어지고 n 은 1000 이하다. 한글 1000자는 UTF-8 로 3000바이트라 Oracle 한도(4000바이트) 안에 든다.
 - boolean 은 NUMBER(1,0).
+- 면접 유형(`INTERVIEW_TYPE`)의 값은 `JOB`, `PERSONALITY` 두 가지다. 다른 값이 든 행은 읽을 때 오류가 난다.
+- 기본 페르소나 다섯 가지는 `IV_PERSONA` 가 비어 있으면 서버가 뜰 때 넣는다(모든 프로파일).
 - 기준 데이터(`IV_USER_ACCOUNT`, `IV_EVAL_CRITERION`, `IV_QUESTION_BANK`, 채용·직무)는 local 에서만 시드로 들어간다. dev/prod 에는 **사용자와 평가 항목을 넣는 수단이 아직 없다**([open-questions.md](open-questions.md)).
 
 ## 2. local: H2 (Oracle 호환 모드)

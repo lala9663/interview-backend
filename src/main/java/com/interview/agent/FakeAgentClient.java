@@ -59,9 +59,42 @@ public class FakeAgentClient implements AgentClient {
         return true;
     }
 
+    private volatile AgentDtos.Health fakeHealth;
+
+    /** 테스트용: health() 가 돌려줄 값을 정한다. null 이면 기본값(UP, llmStatus·sttStatus 없음). */
+    public void setFakeHealth(AgentDtos.Health health) {
+        this.fakeHealth = health;
+    }
+
+    @Override
+    public AgentDtos.Health health() {
+        AgentDtos.Health health = fakeHealth;
+        return health != null ? health : new AgentDtos.Health("UP", null, null);
+    }
+
+    private volatile String heldJobTitle;
+    private volatile java.util.concurrent.CountDownLatch briefingHold;
+
+    /**
+     * 테스트용: 그 직무명의 브리핑 호출을 latch 가 풀릴 때까지(최대 30초) 붙잡아 둔다. "브리핑 작업이 도는 중"을 만들 때 쓴다.
+     * latch 가 null 이면 붙잡지 않는다.
+     */
+    public void holdBriefingsOf(String jobTitle, java.util.concurrent.CountDownLatch latch) {
+        this.heldJobTitle = jobTitle;
+        this.briefingHold = latch;
+    }
+
     @Override
     public AgentDtos.BriefingResponse createBriefing(AgentDtos.BriefingRequest request) {
         record(request);
+        java.util.concurrent.CountDownLatch hold = briefingHold;
+        if (hold != null && heldJobTitle != null && heldJobTitle.equals(request.getJobTitle())) {
+            try {
+                hold.await(30, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         CandidateProfile profile = request.getCandidate() == null || request.getCandidate().getProfile() == null
                 ? new CandidateProfile() : request.getCandidate().getProfile();
         String major = profile.getEducation().isEmpty() ? null : profile.getEducation().get(0).getMajor();
@@ -111,6 +144,17 @@ public class FakeAgentClient implements AgentClient {
                 break;
             }
             response.getQuestions().add(new AgentDtos.GeneratedQuestion("BANK", b.getCategory(), b.getText(), "질문 은행에서 고름"));
+        }
+        // 요청에 predictedFollowUps 가 있으면 질문마다 그 수만큼 예상 꼬리질문을 붙인다.
+        int predicted = request.getPredictedFollowUps() == null ? 0 : request.getPredictedFollowUps();
+        if (predicted > 0) {
+            int questionNo = 0;
+            for (AgentDtos.GeneratedQuestion q : response.getQuestions()) {
+                questionNo++;
+                for (int n = 1; n <= predicted; n++) {
+                    q.getFollowUps().add(questionNo + "번 질문의 예상 꼬리질문 " + n + ": 그 답에서 본인이 직접 한 일을 더 구체적으로 말해 주세요.");
+                }
+            }
         }
         response.setModel(MODEL);
         return response;

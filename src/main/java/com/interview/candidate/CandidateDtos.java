@@ -50,6 +50,7 @@ public final class CandidateDtos {
         private String applicantNo;
         private String name;
         private Track track;
+        private ApplicantType applicantType;
         private String jobCode;
         private String jobTitle;
         private List<PersonRef> interviewers = new ArrayList<PersonRef>();
@@ -65,6 +66,7 @@ public final class CandidateDtos {
         private String applicantNo;
         private String name;
         private Track track;
+        private ApplicantType applicantType;
         private String jobCode;
         private String jobTitle;
         private CandidateProfile profile;

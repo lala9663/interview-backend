@@ -53,6 +53,7 @@ public class InternalRoomService {
         result.setJobTitle(ctx.getJobTitle());
         result.setJdText(ctx.getJdText());
         result.setCandidateBrief(briefingService.candidateBrief(room.getInterviewId()));
+        result.setPersona(BriefingService.personaPart(ctx.getPersona()));
         for (Question q : questionService.list(room.getInterviewId())) {
             if (!q.isHidden()) {
                 result.getQuestions().add(new InternalDtos.ContextQuestion(q.getId(), q.getSource(), q.getCategory(), q.getText()));

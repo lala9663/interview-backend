@@ -41,6 +41,14 @@ public final class InterviewRequests {
         private Integer durationMinutes;
     }
 
+    /** PUT /interviews/{id}/persona */
+    @Getter
+    @Setter
+    public static class SetPersona {
+        @NotNull(message = "personaId 는 필수입니다.")
+        private Long personaId;
+    }
+
     /** PUT /interviews/{id}/interviewers */
     @Getter
     @Setter

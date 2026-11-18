@@ -92,8 +92,18 @@ app:
   matching:
     strategy: jd
     interviewers-per-interview: 2
-    new-grad-plan: [PT, PERSONALITY]
-    experienced-plan: [PORTFOLIO, JOB, PERSONALITY]
+    # 면접이 없는 면접자에게 만들어 줄 면접(1차, 2차 순). 신입도 경력도 직무 → 인성.
+    new-grad-plan: [JOB, PERSONALITY]
+    experienced-plan: [JOB, PERSONALITY]
+
+  # 실시간 기능(녹음, 전사, 꼬리질문 제안, 면접 뒤 AI 평가와 보고서)을 쓰는 트랙. Interview 응답의 liveEnabled.
+  live:
+    new-grad-enabled: false
+    experienced-enabled: true
+
+  evaluation:
+    # AI 참고 평가(GET /interviews/{id}/ai-evaluation)를 볼 수 있는 사람: ADMIN | ALL
+    ai-visible-to: ADMIN
 
   upload:
     # 운영에서 재배포 없이 고치려면 file:/경로/excel-mapping.yml 로 바꾼다.

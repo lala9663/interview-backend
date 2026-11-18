@@ -33,7 +33,7 @@ curl -X POST http://localhost:8080/api/v1/auth/dev-login \
 curl -H "Authorization: Bearer <토큰>" http://localhost:8080/api/v1/recruitments
 ```
 
-- 처음 뜰 때 가짜 시드 데이터가 들어간다: 사용자 6명(`E1001` 김서연 ADMIN, `E1002`~`E1006` 면접관), 채용 2개, 면접자 16명, 오늘 날짜의 면접들.
+- 처음 뜰 때 가짜 시드 데이터가 들어간다: 사용자 6명(`E1001` 김서연 ADMIN, `E1002`~`E1006` 면접관), 채용 2개, 면접자 24명(신입 12, 경력 12), 오늘 날짜의 면접들.
 - DB 파일은 `./data/` 에 생긴다. 지우면 시드부터 다시 시작한다.
 - Agent 없이 AI 작업(브리핑·평가·보고서)까지 보려면 가짜 Agent 로 띄운다: `AGENT_MODE=fake ./gradlew bootRun`
 - 샘플 엑셀: 로그인 후 `GET /api/v1/uploads/template` (가짜 50행, 오류 행 3개 포함). 그대로 신입 공채에 올리면 성공 47·오류 3 이 나온다.
@@ -78,7 +78,14 @@ jar 로 실행할 때는 프로파일을 반드시 지정한다: `SPRING_PROFILE
 | `APP_INSTANCE_ID` | 전부 | 호스트 이름 | 서버 이름. AI 작업의 재시작 복구에 쓴다 |
 | `EXCEL_MAPPING_LOCATION` | 전부 | `classpath:excel-mapping.yml` | 엑셀 컬럼 매핑 파일 위치 |
 
-그 밖의 설정(제한 시간, 스레드풀, 매칭 인원 등)은 `src/main/resources/application.yml` 의 `app.*` 에 있다.
+그 밖의 설정(제한 시간, 스레드풀, 매칭 인원 등)은 `src/main/resources/application.yml` 의 `app.*` 에 있다. 업무 규칙을 바꾸는 설정:
+
+| 설정 | 기본값 | 뜻 |
+| --- | --- | --- |
+| `app.live.new-grad-enabled` | `false` | 신입 면접에서 실시간 기능(녹음, 전사, 꼬리질문 제안, 면접 뒤 AI 평가와 보고서)을 쓰는가. Interview 응답의 `liveEnabled` |
+| `app.live.experienced-enabled` | `true` | 경력 면접에서 실시간 기능을 쓰는가 |
+| `app.evaluation.ai-visible-to` | `ADMIN` | AI 참고 평가(`GET /interviews/{id}/ai-evaluation`)를 볼 수 있는 사람. `ADMIN` 이면 면접관은 403, `ALL` 이면 로그인한 사용자 모두 |
+| `app.matching.new-grad-plan`, `app.matching.experienced-plan` | `[JOB, PERSONALITY]` | 자동 매칭이 면접 없는 면접자에게 만들어 주는 면접(1차, 2차 순) |
 
 ## 폴더 구조
 
@@ -91,9 +98,10 @@ src/main/java/com/interview/
   candidate/      면접자 목록·상세·진행 / imports: 입력 경로 공통 저장 로직(CandidateSource)
   upload/         엑셀 업로드(매핑, 파서, 이력, 오류 행, 샘플 생성)
   matching/       면접관 자동 매칭(InterviewerMatcher)
-  interview/      면접, 면접관 배정, 면접 단위 권한(InterviewAccess)
+  interview/      면접, 면접관 배정, 면접 단위 권한(InterviewAccess), 실시간 기능 사용 여부(LiveProperties), 면접에 페르소나 고르기
+  persona/        면접 페르소나(목록, 관리자 관리, 기본 다섯 가지 넣기)
   briefing/       사전 리포트(브리핑) + BRIEFING 작업
-  question/       면접별 질문
+  question/       면접별 질문(예상 꼬리질문 포함), 질문 피드백
   questionbank/   질문 은행
   room/           방, 입장권, 전사, 꼬리질문
   evaluation/     평가 항목, 면접관 평가, AI 참고 평가 + AI_EVALUATION 작업
@@ -103,6 +111,7 @@ src/main/java/com/interview/
   internal/       Agent 콜백(/internal/v1), X-Internal-Key 필터
   dashboard/      대시보드 집계
   adminstats/     관리자 집계(운영 현황, AI 품질, 면접관 편차). 읽기 전용
+  systemstatus/   시스템 상태(서비스 연결, AI 작업 대기, 일별 면접 방 수). 읽기 전용
   seed/           local 시드 데이터
 src/main/resources/
   application*.yml      프로파일별 설정
@@ -112,7 +121,11 @@ src/test/java/com/interview/
   BlindFieldTest            블라인드 항목 누출 검사
   SecurityAndUploadErrorTest, agent/HttpAgentClientTest, tools/OracleSchemaTest
   adminstats/AdminStatsTest  관리자 집계 세 가지
+  LiveDisabledTest          실시간 기능 잠금(입장권 409, 종료 뒤 작업 없음, 예상 꼬리질문), AI 참고 평가 권한
+  BriefingAndFeedbackTest   사전 리포트의 previousRoundChecks, 질문 피드백
+  candidate/ApplicantTypeTest, persona/PersonaApiTest, systemstatus/SystemStatusTest
   support/ApiTestSupport     테스트 공용 도우미(로그인, 호출, 대기)
+  support/FixtureTestSupport 테스트용 채용·면접자·면접 만들기
   tools/OracleSchemaGenerator  Oracle DDL 생성기
 db/oracle/schema.sql    Oracle DDL (자동 생성)
 docs/                   설계·설정 문서, API 명세 복사본

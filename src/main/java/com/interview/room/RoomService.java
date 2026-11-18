@@ -16,6 +16,7 @@ import com.interview.evaluation.EvaluationService;
 import com.interview.interview.Interview;
 import com.interview.interview.InterviewAccess;
 import com.interview.interview.InterviewStatus;
+import com.interview.interview.LiveProperties;
 import com.interview.job.AiJobService;
 import com.interview.job.JobType;
 import com.interview.question.Question;
@@ -39,6 +40,7 @@ public class RoomService {
     private final QuestionService questionService;
     private final AiJobService jobService;
     private final EvaluationService evaluationService;
+    private final LiveProperties liveProps;
 
     /** 방 만들기. 이미 있으면 그 방을 돌려준다. */
     @Transactional
@@ -83,6 +85,7 @@ public class RoomService {
     /**
      * LIVE → ENDED, 면접 EVALUATING. AI 평가 작업을 접수한다.
      * 그 작업이 Agent finalize → AI 평가 → 보고서(LIVE) 순으로 이어진다(evaluation.AiEvaluationJobHandler).
+     * 실시간 기능을 쓰지 않는 면접(app.live.*, liveEnabled = false)은 상태만 바꾸고 작업을 접수하지 않는다.
      */
     @Transactional
     public RoomDtos.RoomDto end(Long roomId, CurrentUser user) {
@@ -100,6 +103,10 @@ public class RoomService {
         // 면접 중에 이미 모두 평가를 제출했다면 바로 DONE 이 된다.
         evaluationService.completeIfAllSubmitted(interview.getId());
 
+        // 실시간 기능을 쓰지 않는 면접은 상태만 바꾼다: Agent 마무리도, AI 평가·보고서 작업도 없다.
+        if (!liveProps.enabledFor(interview.getTrack())) {
+            return toDto(room);
+        }
         Map<String, Object> payload = new LinkedHashMap<String, Object>();
         payload.put("finalizeRoomId", room.getId());
         payload.put("reportBasis", "LIVE");
@@ -107,11 +114,14 @@ public class RoomService {
         return toDto(room);
     }
 
-    /** 입장권. audio=true 는 마이크를 보내는 단말(방마다 하나, 중복 검사는 Agent 가 한다). */
+    /** 입장권. audio=true 는 마이크를 보내는 단말(방마다 하나, 중복 검사는 Agent 가 한다). 실시간 기능을 쓰지 않는 면접이면 409 LIVE_DISABLED. */
     @Transactional(readOnly = true)
     public RoomDtos.Ticket ticket(Long roomId, boolean audio, CurrentUser user) {
         Room room = requireRoom(roomId);
-        interviewAccess.requireWritable(room.getInterviewId(), user);
+        Interview interview = interviewAccess.requireWritable(room.getInterviewId(), user);
+        if (!liveProps.enabledFor(interview.getTrack())) {
+            throw ApiException.conflict("LIVE_DISABLED", "실시간 기능(녹음·전사)을 쓰지 않는 면접입니다.");
+        }
         if (room.getStatus() == RoomStatus.ENDED) {
             throw ApiException.conflict("ROOM_ALREADY_ENDED", "이미 종료된 방입니다.");
         }

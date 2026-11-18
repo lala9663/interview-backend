@@ -112,14 +112,16 @@ class SecurityAndUploadErrorTest extends ApiTestSupport {
     @Test
     void interviewerCanWriteOnlyAssignedInterviews() throws Exception {
         String admin = login("E1001");
-        // 시드: 경력 1번(서지훈)의 직무 면접에는 E1002(박준호), E1004(최민재)가 배정돼 있다. E1005(정유진)는 아니다.
+        // 시드: 경력 1번(서지훈)의 인성 면접(2차)에는 E1002(박준호), E1004(최민재)가 배정돼 있다. E1005(정유진)는 아니다.
         long experiencedId = apiGet(admin, "/api/v1/recruitments?track=EXPERIENCED").expect(200).json.get("items").get(0).get("id").asLong();
         long candidateId = apiGet(admin, "/api/v1/recruitments/" + experiencedId + "/candidates?q=EXP-2026-0001").expect(200).json
                 .get("items").get(0).get("id").asLong();
         JsonNode progress = apiGet(admin, "/api/v1/candidates/" + candidateId + "/progress").expect(200).json;
         assertThat(progress.get("items").get(0).get("status").asText()).isEqualTo("DONE");
+        assertThat(progress.get("items")).hasSize(2);
+        assertThat(progress.get("items").get(0).get("type").asText()).isEqualTo("JOB");
+        assertThat(progress.get("items").get(1).get("type").asText()).isEqualTo("PERSONALITY");
         assertThat(progress.get("items").get(1).get("status").asText()).isEqualTo("SCHEDULED");
-        assertThat(progress.get("items").get(2).get("status").asText()).isEqualTo("WAITING");
         long interviewId = progress.get("items").get(1).get("interviewId").asLong();
 
         String outsider = login("E1005");

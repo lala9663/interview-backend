@@ -19,11 +19,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.interview.auth.CurrentUser;
+import com.interview.briefing.BriefingService;
 import com.interview.candidate.Candidate;
 import com.interview.candidate.CandidateRepository;
 import com.interview.common.ApiException;
 import com.interview.common.Times;
 import com.interview.common.web.PageResponse;
+import com.interview.persona.Persona;
+import com.interview.persona.PersonaService;
 import com.interview.recruitment.Track;
 import com.interview.user.UserAccount;
 import com.interview.user.UserService;
@@ -41,6 +44,9 @@ public class InterviewService {
     private final InterviewAssembler assembler;
     private final InterviewAccess access;
     private final UserService userService;
+    private final PersonaService personaService;
+    private final InterviewPersonas interviewPersonas;
+    private final BriefingService briefingService;
 
     public PageResponse<InterviewDto> list(final boolean mine, final LocalDate date, final InterviewStatus status,
             final Long recruitmentId, Integer page, Integer size, final CurrentUser user) {
@@ -153,6 +159,26 @@ public class InterviewService {
         assigneeRepository.deleteByInterviewId(id);
         for (Long userId : unique) {
             assigneeRepository.save(new InterviewAssignee(id, userId, MatchedBy.MANUAL));
+        }
+        return assembler.toDto(interview);
+    }
+
+    /**
+     * 이 면접의 페르소나를 고른다(API 명세 2.5, 2.12). 배정된 면접관 또는 ADMIN.
+     * 방이 LIVE·ENDED 면 바꿀 수 없다. 적용되는 페르소나가 실제로 바뀌었고 사전 리포트가 이미 있으면
+     * 새 페르소나로 다시 만드는 작업을 접수한다(만드는 중이면 그대로 둔다).
+     */
+    @Transactional
+    public InterviewDto setPersona(Long id, Long personaId, CurrentUser user) {
+        Interview interview = access.requireWritable(id, user);
+        if (interviewPersonas.isLocked(id)) {
+            throw ApiException.conflict("PERSONA_LOCKED", "면접을 시작한 뒤에는 페르소나를 바꿀 수 없습니다.");
+        }
+        Persona chosen = personaService.requireAvailable(personaId);
+        Persona before = interviewPersonas.effective(interview);
+        interview.setPersonaId(chosen.getId());
+        if (before == null || !before.getId().equals(chosen.getId())) {
+            briefingService.regenerateIfExists(id);
         }
         return assembler.toDto(interview);
     }

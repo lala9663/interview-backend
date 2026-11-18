@@ -18,7 +18,7 @@ app:
   token-store:
     type: memory
   seed:
-    # 가짜 데이터(사용자 6명, 채용 2개, 면접자 16명 ...)를 빈 DB 에 넣는다.
+    # 가짜 데이터(사용자 6명, 채용 2개, 면접자 24명 ...)를 빈 DB 에 넣는다.
     enabled: true
     # 시드 면접의 날짜를 서버를 띄운 날로 옮긴다("오늘 면접"이 항상 보이게).
     shift-dates-to-today: true

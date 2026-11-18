@@ -36,15 +36,17 @@ Java 8 · Spring Boot 2.7.5 · Gradle 7.5.1(wrapper) · Spring Data JPA(Hibernat
 | `common` | ApiException, 오류·목록 응답, `Times`(시각), `Chunks`, JSON 변환기. **여기에 기능 코드를 넣지 않는다** |
 | `auth` `user` | JWT·보안 설정·TokenStore·AuthProvider / 사용자 |
 | `recruitment` `candidate` `upload` `matching` `interview` | 면접 전 |
-| `briefing` `question` `questionbank` | 사전 리포트와 질문 |
+| `persona` | 면접 페르소나(목록·관리, 기본 다섯 가지 넣기, 면접에 적용되는 페르소나 고르는 규칙) |
+| `briefing` `question` `questionbank` | 사전 리포트와 질문(예상 꼬리질문, 질문 피드백 포함) |
 | `room` `internal` | 면접 중(방·전사·꼬리질문) / Agent 콜백 |
 | `evaluation` `report` `job` | 면접 후(평가·보고서) / AI 작업 |
 | `agent` | Agent 클라이언트(`AgentClient`: HTTP, Fake) |
 | `dashboard` `seed` | 집계 / local 시드 |
 | `adminstats` | 관리자 집계(운영 현황판, AI 품질, 면접관 편차). 읽기 전용. 다른 기능의 repository 집계 쿼리를 읽어 조립한다 |
+| `systemstatus` | 시스템 상태(서비스 연결, AI 작업 대기, 일별 면접 방 수). 읽기 전용. `job`·`room` 의 집계 쿼리와 `AgentClient.health()` 를 읽어 조립한다 |
 
 - 다른 기능의 데이터가 필요하면 그 기능의 **service** 를 부른다. 읽기 전용 조립(`InterviewAssembler`)만 repository 를 직접 쓴다.
-- enum, 오류 코드, 설정(`@ConfigurationProperties`)은 **주인 기능의 패키지**에 둔다. 예: `InterviewStatus` → `interview`, `app.matching.*` → `matching/MatchingProperties`.
+- enum, 오류 코드, 설정(`@ConfigurationProperties`)은 **주인 기능의 패키지**에 둔다. 예: `InterviewStatus` → `interview`, `app.matching.*` → `matching/MatchingProperties`, `app.live.*` → `interview/LiveProperties`, `app.evaluation.*` → `evaluation/EvaluationProperties`.
 - 오류는 `ApiException.notFound("X_NOT_FOUND", "한국어 메시지")` 처럼 코드 문자열을 바로 쓴다. 응답 모양은 `{ code, message, details }` 로 고정.
 - 시각: DB 는 `LocalDateTime`(`Times.now()`), 응답은 `OffsetDateTime`(`Times.toOffset`), 요청은 `Times.toLocal`.
 - 목록 응답은 `ListResponse`(`{items}`) 또는 `PageResponse`(`{items,page,size,total}`).

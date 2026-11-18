@@ -16,20 +16,22 @@
 | `auth` | `SecurityConfig`, `JwtTokenService`, `AuthService`, `TokenStore`, `AuthProvider`, `SecretsGuard` | 2.1 |
 | `user` | `UserAccount`, `InterviewerController` | 2.4 |
 | `recruitment` | `Recruitment`, `JobPosting`, `RecruitmentController` | 2.2 |
-| `candidate` | `Candidate`, `CandidateProfile`, `CandidateService` / `imports.CandidateImportService`, `imports.CandidateSource` | 2.3 |
+| `candidate` | `Candidate`, `CandidateProfile`, `ApplicantType`, `CandidateService` / `imports.CandidateImportService`, `imports.CandidateSource` | 2.3 |
 | `upload` | `ExcelCandidateSource`, `ExcelMappingLoader`, `UploadService`, `SampleExcelGenerator` | 2.3 |
 | `matching` | `AutoAssignmentService`, `InterviewerMatcher`, `JdBasedInterviewerMatcher` | 2.4 |
-| `interview` | `Interview`, `InterviewAssignee`, `InterviewService`, `InterviewAssembler`, `InterviewAccess`, `InterviewContext` | 2.5 |
+| `interview` | `Interview`, `InterviewAssignee`, `InterviewService`, `InterviewAssembler`, `InterviewAccess`, `InterviewContext`, `LiveProperties`, `InterviewPersonas` | 2.5 |
+| `persona` | `Persona`, `PersonaService`(규칙과 `Resolver`), `PersonaController`, `PersonaInitializer`, `PersonaDefaults` | 2.12 |
 | `briefing` | `Briefing`, `BriefingService`, `BriefingJobHandler` | 2.6 |
-| `question` / `questionbank` | `Question`, `QuestionService` / `QuestionBankItem` | 2.6, 2.9 |
+| `question` / `questionbank` | `Question`, `QuestionService`, `QuestionFeedback`, `QuestionFeedbackService` / `QuestionBankItem` | 2.6, 2.9 |
 | `room` | `Room`, `Utterance`, `FollowUp`, `RoomEvent`, `RoomService`, `TranscriptService`, `RoomTicketService` | 2.7 |
 | `internal` | `InternalRoomController`, `InternalRoomService`, `InternalKeyFilter` | 5 |
-| `evaluation` | `EvalCriterion`, `InterviewerEvaluation`, `AiEvaluation`, `EvaluationService`, `AiEvaluationJobHandler` | 2.8 |
+| `evaluation` | `EvalCriterion`, `InterviewerEvaluation`, `AiEvaluation`, `EvaluationService`, `AiEvaluationJobHandler`, `EvaluationProperties` | 2.8 |
 | `report` | `Report`, `ReportService`, `ReportJobHandler` | 2.8 |
 | `job` | `AiJob`, `AiJobService`, `AiJobRunner`, `AiJobRecovery`, `AiJobHandler` | 2.8 |
 | `agent` | `AgentClient`, `HttpAgentClient`, `FakeAgentClient`, `dto.AgentDtos` | 4 |
 | `dashboard` | `DashboardService` | 2.9 |
 | `adminstats` | `AdminStatsController`, `OperationsService`, `QualityService`, `InterviewerStatsService`, `OperationsProperties` | 2.11 |
+| `systemstatus` | `SystemStatusController`, `SystemStatusService`, `ServiceStatus` | 2.13 |
 | `seed` | `LocalSeedRunner` | - |
 
 엔티티끼리는 JPA 연관(`@ManyToOne`)을 걸지 않고 id(`Long`)로만 가리킨다. 그래서 DB 에 FK 제약이 없다(정합성은 서비스 코드가 지킨다).
@@ -46,6 +48,8 @@
 | AI 작업 실행 | `job.AiJobHandler` | 브리핑, AI 평가, 보고서 | `JobType` 추가 + 새 구현 |
 | 엑셀 컬럼·블라인드 항목 | `excel-mapping.yml` | - | 파일 수정. [excel-upload.md](excel-upload.md) |
 | 트랙별 Agent 제한 시간 | `app.agent.new-grad.*`, `app.agent.experienced.*` | 신입 120초, 경력 보고서 3600초 | 설정값 |
+| 트랙별 실시간 기능 사용 | `app.live.new-grad-enabled`, `app.live.experienced-enabled` (`interview.LiveProperties`) | 신입 끔, 경력 켬 | 설정값 |
+| AI 참고 평가를 볼 수 있는 사람 | `app.evaluation.ai-visible-to` (`evaluation.EvaluationProperties`) | `ADMIN` | 설정값(`ADMIN` \| `ALL`) |
 
 ## 4. 흐름
 
@@ -58,21 +62,33 @@ POST /recruitments/{id}/uploads
   UploadService                          IV_UPLOAD_BATCH, 실패 행은 IV_UPLOAD_ERROR
 
 POST /recruitments/{id}/assignments/auto
-  AutoAssignmentService                  면접 없는 면접자에게 기본 면접 생성(app.matching.*-plan, 상태 WAITING)
+  AutoAssignmentService                  면접 없는 면접자에게 기본 면접 생성(app.matching.*-plan: 직무 → 인성, 상태 WAITING)
                                          면접관 없는 면접에 InterviewerMatcher 로 배정
                                          (app.features.auto-briefing-on-match) 새 면접의 BRIEFING 작업 접수
 
 BRIEFING 작업 (BriefingJobHandler)
-  BriefingService.buildRequest()         profile(블라인드 제외) + JD + 질문 은행
+  BriefingService.buildRequest()         profile(블라인드 제외) + JD + 질문 은행 + 면접자 유형 + 적용되는 페르소나
+                                         실시간 기능을 쓰지 않는 면접이면 predictedFollowUps: 3
   AgentClient.createBriefing()
-  BriefingService.saveResult()           요약 저장, 질문(JD·RESUME·BANK) 교체
+  BriefingService.saveResult()           요약 저장, 질문(JD·RESUME·BANK)과 예상 꼬리질문 교체
+
+PUT /interviews/{id}/persona
+  InterviewService.setPersona()          방이 LIVE·ENDED 면 409. 적용되는 페르소나가 바뀌었고 사전 리포트가 이미 있으면
+                                         BRIEFING 작업을 다시 접수. 만드는 작업이 돌고 있으면 접수하지 않는다.
+                                         그 작업이 끝났을 때 시작할 때 적용한 페르소나(IV_BRIEFING.PERSONA_ID)와 지금의 것이 다르면
+                                         한 번 더 접수한다(BriefingJobHandler.onFinished → regenerateIfPersonaChanged)
 ```
+
+- **실시간 기능 사용 여부(`liveEnabled`)**: 트랙으로 정한다(`LiveProperties`). 면접마다 따로 켜고 끄는 값은 없다. 쓰지 않는 면접은 입장권과 보고서 다시 만들기가 `409 LIVE_DISABLED` 이고, 방을 끝내도 AI 작업을 접수하지 않으며, 대시보드의 보고서 대기에 들어가지 않고, 운영 현황판에서는 시작 지연(`NOT_STARTED`)과 시간 초과(`OVERTIME`)만 붙는다(`SILENT`·`NO_AUDIO`·`STT_BACKLOG`·`AGENT_DOWN`·`JOB_FAILED` 는 붙지 않고 `silentMinutes` 는 0).
+- **적용되는 페르소나**: `PersonaService.Resolver` 가 정한다. 면접에 고른 것(`IV_INTERVIEW.PERSONA_ID`)이 쓰는 중이면 그것, 꺼졌거나 고르지 않았으면 기본 선택(추천이면서 쓰는 것 가운데 가장 먼저 만든 것, 추천이 없으면 쓰는 것 가운데 가장 먼저 만든 것). 방이 LIVE·ENDED 면 꺼졌어도 고른 것 그대로. Interview 응답, 브리핑 요청, 방 context 가 같은 규칙을 쓴다(`InterviewAssembler`, `InterviewContext.Loader`).
+- **예상 꼬리질문**: 브리핑 응답의 `questions[].followUps` 를 그 질문을 부모(`parentQuestionId`)로 하는 `FOLLOW_UP` 질문(category "예상 꼬리질문")으로 저장한다. 순서는 준비된 질문(1부터) → 남긴 질문 → 예상 꼬리질문. 브리핑을 다시 만들면 아직 묻지 않은 준비된 질문과 예상 꼬리질문을 지우고 새것으로 바꾼다. 이미 물은 것은 남는다(부모 질문이 지워졌으면 부모 없이 남는다) (`QuestionService.replaceGenerated`).
+- **기본 페르소나**: 서버가 뜰 때 `IV_PERSONA` 가 비어 있으면 다섯 가지를 넣는다(`PersonaInitializer`, 모든 프로파일).
 
 ### 면접 중
 
 ```
 POST /interviews/{id}/room        방 생성(이미 있으면 그 방), CREATED
-POST /rooms/{id}/ticket           입장권 JWT(5분) + agentWsUrl
+POST /rooms/{id}/ticket           입장권 JWT(5분) + agentWsUrl. 실시간 기능을 쓰지 않는 면접이면 409 LIVE_DISABLED
 POST /rooms/{id}/start            CREATED → LIVE, 면접 IN_PROGRESS
 (Agent) GET  /internal/v1/rooms/{id}/context          방을 열 때 한 번
 (Agent) POST /internal/v1/rooms/{id}/utterances       확정 전사. (roomId, seq) 같으면 덮어씀
@@ -84,6 +100,7 @@ PUT /interviews/{id}/my-evaluation                    면접관 메모·점수 �
 
 ```
 POST /rooms/{id}/end              LIVE → ENDED, 면접 EVALUATING, AI_EVALUATION 작업 접수
+                                  (실시간 기능을 쓰지 않는 면접은 상태만 바꾸고 작업을 접수하지 않는다)
   AiEvaluationJobHandler            payload { finalizeRoomId, reportBasis: "LIVE" }
     AgentClient.finalizeRoom()        실패해도 계속 진행(IV_ROOM_EVENT 에 FINALIZE_FAILED)
     AgentClient.evaluate()            → IV_AI_EVALUATION

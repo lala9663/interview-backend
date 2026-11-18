@@ -59,6 +59,13 @@ public class Briefing {
     @Column(name = "SUMMARY_JSON")
     private JsonNode summary;
 
+    /**
+     * 이 사전 리포트를 만들 때 적용한 페르소나(persona.Persona 의 id). 없었으면 null.
+     * 만드는 동안 면접의 페르소나가 바뀌었는지 알아내는 데 쓴다.
+     */
+    @Column(name = "PERSONA_ID")
+    private Long personaId;
+
     /** 요약에서 빠진 블라인드 항목의 키. */
     @Convert(converter = StringListConverter.class)
     @Column(name = "EXCLUDED_FIELDS", length = 500)

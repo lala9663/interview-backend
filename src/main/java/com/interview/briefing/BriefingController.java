@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.interview.auth.CurrentUser;
+import com.interview.report.ReportService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,10 +24,11 @@ import lombok.RequiredArgsConstructor;
 public class BriefingController {
 
     private final BriefingService briefingService;
+    private final ReportService reportService;
 
     @GetMapping("/interviews/{id}/briefing")
     public BriefingDto get(@PathVariable Long id) {
-        return briefingService.get(id);
+        return briefingService.get(id, reportService.previousRoundChecks(id));
     }
 
     @PostMapping("/interviews/{id}/briefing/generate")

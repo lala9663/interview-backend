@@ -22,7 +22,7 @@ import com.interview.common.web.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
-/** API 명세 2.5 면접, 2.4 의 수동 지정. */
+/** API 명세 2.5 면접(페르소나 고르기 포함), 2.4 의 수동 지정. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -54,6 +54,12 @@ public class InterviewController {
     public InterviewDto patch(@PathVariable Long id, @Valid @RequestBody InterviewRequests.Patch request,
             @AuthenticationPrincipal CurrentUser user) {
         return interviewService.patch(id, request, user);
+    }
+
+    @PutMapping("/interviews/{id}/persona")
+    public InterviewDto setPersona(@PathVariable Long id, @Valid @RequestBody InterviewRequests.SetPersona request,
+            @AuthenticationPrincipal CurrentUser user) {
+        return interviewService.setPersona(id, request.getPersonaId(), user);
     }
 
     @PutMapping("/interviews/{id}/interviewers")

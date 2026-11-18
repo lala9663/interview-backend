@@ -11,7 +11,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.interview.agent.dto.AgentDtos;
+import com.interview.auth.CurrentUser;
 import com.interview.briefing.BriefingService;
+import com.interview.common.ApiException;
 import com.interview.common.Times;
 import com.interview.common.json.Json;
 import com.interview.interview.InterviewAccess;
@@ -35,9 +37,14 @@ public class AiEvaluationService {
     private final TranscriptService transcriptService;
     private final BriefingService briefingService;
     private final AiJobService jobService;
+    private final EvaluationProperties props;
 
+    /** AI 참고 평가 조회. app.evaluation.ai-visible-to 가 ADMIN(기본)이면 ADMIN 만 볼 수 있다. */
     @Transactional(readOnly = true)
-    public EvaluationDtos.AiEvaluationDto get(Long interviewId) {
+    public EvaluationDtos.AiEvaluationDto get(Long interviewId, CurrentUser user) {
+        if (props.getAiVisibleTo() == EvaluationProperties.Audience.ADMIN && !user.isAdmin()) {
+            throw ApiException.forbidden("AI 참고 평가는 관리자만 볼 수 있습니다.");
+        }
         interviewAccess.requireExisting(interviewId);
         EvaluationDtos.AiEvaluationDto dto = new EvaluationDtos.AiEvaluationDto();
         JobStatus jobStatus = jobService.latestStatus(interviewId, JobType.AI_EVALUATION);

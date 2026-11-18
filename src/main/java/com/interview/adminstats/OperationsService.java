@@ -42,6 +42,7 @@ import lombok.RequiredArgsConstructor;
  * 당일 운영 현황판(API 명세 2.11 의 /admin/operations).
  * 대상: 그 채용의 면접 가운데 예정 시각이 그 날짜인 것 + (날짜가 오늘이면) 지금 진행 중인 것.
  * 면접 수와 무관하게 조회 횟수가 일정하다(면접, 방, 전사 요약, 최근 작업을 묶음 조회).
+ * 실시간 기능을 쓰지 않는 면접(liveEnabled = false)에는 NOT_STARTED·OVERTIME 만 붙고, silentMinutes 는 0 이다.
  */
 @Service
 @RequiredArgsConstructor
@@ -214,6 +215,8 @@ public class OperationsService {
         LocalDateTime endedAt = room == null ? null : room.getEndedAt();
         boolean live = room != null && room.getStatus() == RoomStatus.LIVE && startedAt != null;
         boolean started = startedAt != null;
+        // 실시간 기능(전사, 마이크, 면접 뒤 AI 작업)을 쓰는 면접인가. 쓰지 않는 면접에는 그것을 전제로 한 주의를 붙이지 않는다.
+        boolean liveFeatures = dto != null && dto.isLiveEnabled();
         item.setStartedAt(Times.toOffset(startedAt));
         item.setEndedAt(Times.toOffset(endedAt));
 
@@ -250,7 +253,7 @@ public class OperationsService {
             }
         }
         item.setLastUtteranceAt(Times.toOffset(lastUtteranceAt));
-        if (live) {
+        if (live && liveFeatures) {
             LocalDateTime base = lastUtteranceAt != null && lastUtteranceAt.isAfter(startedAt) ? lastUtteranceAt : startedAt;
             item.setSilentMinutes(minutes(base, now));
         }
@@ -270,20 +273,22 @@ public class OperationsService {
         if (live && item.getOvertimeMinutes() >= props.getOvertimeMinutes()) {
             alerts.add(OperationsDtos.OVERTIME);
         }
-        if (live && Boolean.FALSE.equals(item.getAudioConnected())) {
+        // 아래 다섯 가지는 실시간 기능을 쓰는 면접에만 붙인다(전사·마이크·Agent·면접 뒤 AI 작업을 전제로 한 것).
+        // 시작 지연(NOT_STARTED)과 시간 초과(OVERTIME)는 실시간 기능과 무관하므로 모든 면접에 붙는다.
+        if (liveFeatures && live && Boolean.FALSE.equals(item.getAudioConnected())) {
             alerts.add(OperationsDtos.NO_AUDIO);
         }
-        if (live && item.getSilentMinutes() >= props.getSilentMinutes()) {
+        if (liveFeatures && live && item.getSilentMinutes() >= props.getSilentMinutes()) {
             alerts.add(OperationsDtos.SILENT);
         }
-        if (live && agentRoom != null
+        if (liveFeatures && live && agentRoom != null
                 && (agentRoom.getQueueDepth() >= props.getSttBacklogDepth() || agentRoom.getDroppedChunks() >= 1)) {
             alerts.add(OperationsDtos.STT_BACKLOG);
         }
-        if (latestJob != null && latestJob.getStatus() == JobStatus.FAILED) {
+        if (liveFeatures && latestJob != null && latestJob.getStatus() == JobStatus.FAILED) {
             alerts.add(OperationsDtos.JOB_FAILED);
         }
-        if (live && !agentUp) {
+        if (liveFeatures && live && !agentUp) {
             alerts.add(OperationsDtos.AGENT_DOWN);
         }
         return item;

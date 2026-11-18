@@ -58,6 +58,11 @@ public class Candidate {
     @Column(name = "JOB_TITLE", length = 200)
     private String jobTitle;
 
+    /** 면접자 유형(장학생, 공채, 경력 석사 ...). 모르면 null. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "APPLICANT_KIND", length = 20)
+    private ApplicantType applicantType;
+
     @Lob
     @Convert(converter = CandidateProfileConverter.class)
     @Column(name = "PROFILE_JSON")

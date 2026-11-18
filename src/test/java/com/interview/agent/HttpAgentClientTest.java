@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.agent.dto.AgentDtos;
 import com.interview.auth.AppSecurityProperties;
+import com.interview.candidate.ApplicantType;
 import com.interview.candidate.CandidateProfile;
 import com.interview.interview.InterviewType;
 import com.interview.recruitment.Track;
@@ -83,7 +84,7 @@ class HttpAgentClientTest {
 
         AgentDtos.BriefingRequest request = new AgentDtos.BriefingRequest();
         request.setTrack(Track.NEW_GRAD);
-        request.setInterviewType(InterviewType.PT);
+        request.setInterviewType(InterviewType.JOB);
         request.setJobTitle("SW개발");
         request.setJdText("JD");
         request.setCandidate(new AgentDtos.CandidatePart(new CandidateProfile()));
@@ -98,7 +99,14 @@ class HttpAgentClientTest {
         assertThat(receivedKey.get("/internal/v1/briefings")).isEqualTo("dev-internal-key");
         com.fasterxml.jackson.databind.JsonNode sent = new ObjectMapper().readTree(receivedBody.get("/internal/v1/briefings"));
         assertThat(sent.get("track").asText()).isEqualTo("NEW_GRAD");
-        assertThat(sent.get("interviewType").asText()).isEqualTo("PT");
+        assertThat(sent.get("interviewType").asText()).isEqualTo("JOB");
+        // 선택 항목(applicantType, persona, predictedFollowUps)은 값이 없으면 보내지 않는다.
+        assertThat(sent.has("applicantType")).isFalse();
+        assertThat(sent.has("persona")).isFalse();
+        assertThat(sent.has("predictedFollowUps")).isFalse();
+        // /health 에 llmStatus·sttStatus 가 없으면 null 이다.
+        assertThat(client.health().isUp()).isTrue();
+        assertThat(client.health().getLlmStatus()).isNull();
         assertThat(sent.get("candidate").get("profile").has("essays")).isTrue();
         assertThat(sent.get("questionBank").get(0).get("id").asLong()).isEqualTo(31L);
         assertThat(sent.get("questionCount").get("resume").asInt()).isEqualTo(6);
@@ -106,6 +114,40 @@ class HttpAgentClientTest {
         AgentDtos.FinalizeResponse finalized = client.finalizeRoom(9001L, true);
         assertThat(finalized.isPostSttScheduled()).isTrue();
         assertThat(receivedBody.get("/internal/v1/rooms/9001/finalize")).contains("\"postStt\":true");
+    }
+
+    @Test
+    void sendsOptionalBriefingFieldsAndReadsPredictedFollowUps() throws Exception {
+        respond("/internal/v1/briefings", 200, "{\"summary\":{\"headline\":\"요약\"},"
+                + "\"questions\":[{\"source\":\"RESUME\",\"category\":\"프로젝트\",\"text\":\"질문?\",\"intent\":\"의도\","
+                + "\"followUps\":[\"예상 꼬리질문 1\",\"예상 꼬리질문 2\"]}],\"excluded\":[],\"model\":\"m1\"}");
+        AgentDtos.BriefingRequest request = new AgentDtos.BriefingRequest();
+        request.setTrack(Track.NEW_GRAD);
+        request.setInterviewType(InterviewType.JOB);
+        request.setCandidate(new AgentDtos.CandidatePart(new CandidateProfile()));
+        request.setApplicantType(ApplicantType.OPEN);
+        request.setPersona(new AgentDtos.PersonaPart("경험 행동형", "설명", "행동 사례 질문", "빠진 단계 보완", "지킬 것"));
+        request.setPredictedFollowUps(3);
+
+        AgentDtos.BriefingResponse response = client.createBriefing(request);
+
+        assertThat(response.getQuestions().get(0).getFollowUps()).containsExactly("예상 꼬리질문 1", "예상 꼬리질문 2");
+        com.fasterxml.jackson.databind.JsonNode sent = new ObjectMapper().readTree(receivedBody.get("/internal/v1/briefings"));
+        assertThat(sent.get("applicantType").asText()).isEqualTo("OPEN");
+        assertThat(sent.get("predictedFollowUps").asInt()).isEqualTo(3);
+        assertThat(sent.get("persona").get("name").asText()).isEqualTo("경험 행동형");
+        assertThat(sent.get("persona").get("questionType").asText()).isEqualTo("행동 사례 질문");
+        assertThat(sent.get("persona").get("followUpType").asText()).isEqualTo("빠진 단계 보완");
+        assertThat(sent.get("persona").get("guard").asText()).isEqualTo("지킬 것");
+    }
+
+    @Test
+    void healthCarriesLlmAndSttStatusWhenAgentSendsThem() {
+        respond("/health", 200, "{\"status\":\"UP\",\"llm\":\"fake\",\"stt\":\"fake\",\"llmStatus\":\"DEGRADED\",\"sttStatus\":\"OK\"}");
+        AgentDtos.Health health = client.health();
+        assertThat(health.isUp()).isTrue();
+        assertThat(health.getLlmStatus()).isEqualTo("DEGRADED");
+        assertThat(health.getSttStatus()).isEqualTo("OK");
     }
 
     @Test
@@ -126,6 +168,7 @@ class HttpAgentClientTest {
         server.stop(0);
         HttpAgentClient dead = newClient("http://127.0.0.1:" + port);
         assertThat(dead.isUp()).isFalse();
+        assertThat(dead.health().getStatus()).isEqualTo("DOWN");
         AgentDtos.EvaluationRequest request = new AgentDtos.EvaluationRequest();
         request.setTrack(Track.NEW_GRAD);
         Throwable thrown = catchThrowable(() -> dead.evaluate(request));
@@ -142,6 +185,11 @@ class HttpAgentClientTest {
     }
 
     private void respond(final String path, final int status, final String body) {
+        try {
+            server.removeContext(path); // 같은 경로의 응답을 테스트에서 바꿀 수 있게 한다.
+        } catch (IllegalArgumentException ignore) {
+            // 아직 등록하지 않은 경로
+        }
         server.createContext(path, new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {

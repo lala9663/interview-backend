@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpMethod;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.interview.agent.FakeAgentClient;
 import com.interview.auth.AppSecurityProperties;
+import com.interview.interview.LiveProperties;
 import com.interview.support.ApiTestSupport;
 
 import io.jsonwebtoken.Claims;
@@ -33,6 +36,27 @@ class CoreFlowIntegrationTest extends ApiTestSupport {
 
     @Autowired
     private AppSecurityProperties securityProps;
+
+    @Autowired
+    private LiveProperties liveProps;
+
+    /**
+     * 이 테스트는 신입 채용으로 실시간 흐름(입장권, 종료 뒤 AI 평가·보고서)까지 본다.
+     * 신입 면접의 실시간 기능은 기본이 꺼져 있으므로(app.live.new-grad-enabled) 이 테스트 동안만 켠다.
+     * 꺼진 상태의 동작은 LiveDisabledTest 가 본다.
+     */
+    private boolean newGradLiveBefore;
+
+    @BeforeEach
+    void enableLiveForNewGrad() {
+        newGradLiveBefore = liveProps.isNewGradEnabled();
+        liveProps.setNewGradEnabled(true);
+    }
+
+    @AfterEach
+    void restoreLiveSetting() {
+        liveProps.setNewGradEnabled(newGradLiveBefore);
+    }
 
     @Test
     void fullFlow() throws Exception {
@@ -81,15 +105,15 @@ class CoreFlowIntegrationTest extends ApiTestSupport {
         assertThat(match.get("unassignedInterviewCount").asInt()).isZero();
         JsonNode detail = apiGet(admin, "/api/v1/candidates/" + candidateId).expect(200).json;
         assertThat(detail.get("interviews")).hasSize(2);
-        JsonNode pt = detail.get("interviews").get(0);
-        assertThat(pt.get("type").asText()).isEqualTo("PT");
-        assertThat(pt.get("status").asText()).isEqualTo("WAITING");
-        assertThat(pt.get("interviewers")).hasSize(2);
-        assertThat(pt.get("interviewers").get(0).get("matchedBy").asText()).isEqualTo("JD");
-        final long interviewId = pt.get("id").asLong();
-        // 목록의 type 은 "지금 차수"(여기서는 PT) 면접의 종류로 거른다.
+        JsonNode first = detail.get("interviews").get(0);
+        assertThat(first.get("type").asText()).isEqualTo("JOB");
+        assertThat(first.get("status").asText()).isEqualTo("WAITING");
+        assertThat(first.get("interviewers")).hasSize(2);
+        assertThat(first.get("interviewers").get(0).get("matchedBy").asText()).isEqualTo("JD");
+        final long interviewId = first.get("id").asLong();
+        // 목록의 type 은 "지금 차수"(여기서는 직무) 면접의 종류로 거른다.
         String byNo = "/api/v1/recruitments/" + recruitmentId + "/candidates?q=2026H-00001&type=";
-        assertThat(apiGet(admin, byNo + "PT").expect(200).json.get("total").asInt()).isEqualTo(1);
+        assertThat(apiGet(admin, byNo + "JOB").expect(200).json.get("total").asInt()).isEqualTo(1);
         assertThat(apiGet(admin, byNo + "PERSONALITY").expect(200).json.get("total").asInt()).isZero();
         // 다시 실행해도 이미 배정된 면접은 건드리지 않는다.
         JsonNode rematch = api(HttpMethod.POST, admin, "/api/v1/recruitments/" + recruitmentId + "/assignments/auto", null)
@@ -199,7 +223,7 @@ class CoreFlowIntegrationTest extends ApiTestSupport {
         String toBank = "/api/v1/question-bank/from-question/" + used.get("id").asLong();
         JsonNode banked = api(HttpMethod.POST, admin, toBank, null).expect(200).json;
         assertThat(banked.get("jobCode").asText()).isEqualTo("SW");
-        assertThat(banked.get("interviewType").asText()).isEqualTo("PT");
+        assertThat(banked.get("interviewType").asText()).isEqualTo("JOB");
         assertThat(banked.get("category").asText()).isEqualTo("꼬리질문");
         assertThat(banked.get("text").asText()).isEqualTo("그때 가장 어려웠던 점은?");
         assertThat(api(HttpMethod.POST, admin, toBank, null).expect(200).json.get("id").asLong())
@@ -243,6 +267,7 @@ class CoreFlowIntegrationTest extends ApiTestSupport {
         assertThat(interviewAfterReport.get("reportStatus").asText()).isEqualTo("SUCCEEDED");
         assertThat(interviewAfterReport.get("reportBasis").asText()).isEqualTo("LIVE");
         assertThat(interviewAfterReport.get("roomStatus").asText()).isEqualTo("ENDED");
+        assertThat(interviewAfterReport.get("liveEnabled").asBoolean()).isTrue();
 
         // ---- refined 콜백 → 전사 교체(POST) → 보고서 v2(REFINED) ----
         String refined = "{\"sttModel\":\"whisper-large-v3\",\"items\":["
@@ -277,7 +302,7 @@ class CoreFlowIntegrationTest extends ApiTestSupport {
         String evaluation = "{\"memo\":\"측정 방법을 잘 설명함\",\"scores\":[{\"criterionCode\":\"PROBLEM_SOLVING\",\"score\":4,"
                 + "\"comment\":\"좋음\"}],\"grade\":\"A\",\"submitted\":true}";
         int submitted = 0;
-        for (JsonNode interviewer : pt.get("interviewers")) {
+        for (JsonNode interviewer : first.get("interviewers")) {
             String token = login(employeeNoById.get(interviewer.get("id").asLong()));
             // 자동 저장(제출 전)
             api(HttpMethod.PUT, token, "/api/v1/interviews/" + interviewId + "/my-evaluation", "{\"memo\":\"작성 중\"}").expect(200);

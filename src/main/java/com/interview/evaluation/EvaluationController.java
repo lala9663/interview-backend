@@ -41,7 +41,7 @@ public class EvaluationController {
     }
 
     @GetMapping("/ai-evaluation")
-    public EvaluationDtos.AiEvaluationDto aiEvaluation(@PathVariable Long id) {
-        return aiEvaluationService.get(id);
+    public EvaluationDtos.AiEvaluationDto aiEvaluation(@PathVariable Long id, @AuthenticationPrincipal CurrentUser user) {
+        return aiEvaluationService.get(id, user);
     }
 }

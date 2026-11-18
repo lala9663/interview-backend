@@ -14,6 +14,12 @@ public interface AgentClient {
     /** Agent 가 살아 있는지. 예외를 던지지 않는다. */
     boolean isUp();
 
+    /**
+     * Agent 의 GET /health 응답(status 와, 있으면 llmStatus·sttStatus). 예외를 던지지 않는다.
+     * Agent 에 닿지 못하면 status 가 DOWN 이고 나머지는 null 이다.
+     */
+    AgentDtos.Health health();
+
     AgentDtos.BriefingResponse createBriefing(AgentDtos.BriefingRequest request);
 
     AgentDtos.EvaluationResponse evaluate(AgentDtos.EvaluationRequest request);

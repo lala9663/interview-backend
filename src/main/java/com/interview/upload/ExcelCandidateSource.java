@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import com.interview.candidate.ApplicantType;
 import com.interview.candidate.CandidateProfile;
 import com.interview.candidate.imports.CandidateRow;
 import com.interview.candidate.imports.CandidateSource;
@@ -165,6 +166,9 @@ public class ExcelCandidateSource implements CandidateSource<InputStream> {
                 row.setJobCode(value);
             } else if ("jobTitle".equals(field)) {
                 row.setJobTitle(value);
+            } else if ("applicantType".equals(field)) {
+                // 알 수 없는 값은 행 오류로 만들지 않고 비워 둔다(null).
+                row.setApplicantType(ApplicantType.parse(value));
             } else if ("education.degree".equals(field)) {
                 education.setDegree(value);
                 hasEducation = true;

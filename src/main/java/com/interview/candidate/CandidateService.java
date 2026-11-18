@@ -39,17 +39,21 @@ public class CandidateService {
     }
 
     /**
-     * 면접자 목록. status 와 type 은 "지금 차수" 면접의 상태·종류로 거른다.
+     * 면접자 목록. status 와 type 은 "지금 차수" 면접의 상태·종류로, applicantType 은 면접자 유형으로 거른다.
      * 지금 차수는 DB 컬럼이 아니라 계산값이라, 채용 한 건의 면접자를 모두 읽은 뒤 메모리에서 거르고 자른다
      * (채용 한 건에 수천 명 수준까지를 가정).
      */
-    public PageResponse<CandidateDtos.ListItem> list(final Long recruitmentId, final String jobCode, final String q,
-            InterviewStatus status, InterviewType type, Integer page, Integer size) {
+    public PageResponse<CandidateDtos.ListItem> list(final Long recruitmentId, final String jobCode,
+            final ApplicantType applicantType, final String q, InterviewStatus status, InterviewType type, Integer page,
+            Integer size) {
         Specification<Candidate> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<Predicate>();
             predicates.add(cb.equal(root.get("recruitmentId"), recruitmentId));
             if (jobCode != null && !jobCode.trim().isEmpty()) {
                 predicates.add(cb.equal(root.get("jobCode"), jobCode.trim()));
+            }
+            if (applicantType != null) {
+                predicates.add(cb.equal(root.get("applicantType"), applicantType));
             }
             if (q != null && !q.trim().isEmpty()) {
                 String like = "%" + q.trim() + "%";
@@ -107,6 +111,7 @@ public class CandidateService {
             item.setApplicantNo(c.getApplicantNo());
             item.setName(c.getName());
             item.setTrack(c.getTrack());
+            item.setApplicantType(c.getApplicantType());
             item.setJobCode(c.getJobCode());
             item.setJobTitle(c.getJobTitle());
             InterviewDto current = dtoByCandidate.get(c.getId());
@@ -129,6 +134,7 @@ public class CandidateService {
         detail.setApplicantNo(c.getApplicantNo());
         detail.setName(c.getName());
         detail.setTrack(c.getTrack());
+        detail.setApplicantType(c.getApplicantType());
         detail.setJobCode(c.getJobCode());
         detail.setJobTitle(c.getJobTitle());
         detail.setProfile(c.getProfile() == null ? new CandidateProfile() : c.getProfile());
