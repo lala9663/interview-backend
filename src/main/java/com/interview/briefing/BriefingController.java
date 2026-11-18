@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,8 +34,10 @@ public class BriefingController {
 
     @PostMapping("/interviews/{id}/briefing/generate")
     public ResponseEntity<Map<String, Object>> generate(@PathVariable Long id,
-            @AuthenticationPrincipal CurrentUser user) {
-        Long jobId = briefingService.requestGenerate(id, user).getId();
+            @RequestBody(required = false) Map<String, Object> body, @AuthenticationPrincipal CurrentUser user) {
+        // target: ALL(기본) | SUMMARY(요약만) | QUESTIONS(질문만)
+        BriefingTarget target = BriefingTarget.parse(body == null ? null : body.get("target"));
+        Long jobId = briefingService.requestGenerate(id, user, target).getId();
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(Collections.<String, Object>singletonMap("jobId", jobId));
     }
 }

@@ -26,7 +26,7 @@
 | 44 | AI 참고 평가 권한(`app.evaluation.ai-visible-to`)은 `GET /interviews/{id}/ai-evaluation` 에만 건다. 보고서 본문과 관리자 집계는 그대로다 | `AiEvaluationService.get` |
 | 45 | 페르소나: 이름만 필수다(설명·질문 유형·꼬리질문 유형은 비워도 된다). 이름 중복은 앞뒤 공백을 뗀 글자가 같은 것. `recommended: true` 와 `enabled: false` 를 함께 보내면 400. 면접이 고른 페르소나를 지우면 그 면접은 기본 선택을 따른다 | `PersonaService` |
 | 46 | 페르소나를 고르지 않은 면접은 방이 LIVE·ENDED 여도 그때그때의 기본 선택을 보여 준다(시작할 때의 기본 선택을 기록해 두지 않는다) | `PersonaService.Resolver`, `InterviewPersonas` |
-| 47 | 면접의 페르소나를 바꿔도 적용되는 페르소나가 그대로면(기본 선택과 같은 것을 고름) 사전 리포트를 다시 만들지 않는다. 사전 리포트를 만드는 작업이 돌고 있으면 새 작업을 접수하지 않고, 그 작업이 성공으로 끝난 뒤 시작할 때의 페르소나와 지금의 페르소나가 다르면 한 번 더 만든다(실패로 끝나면 다시 만들지 않는다) | `InterviewService.setPersona`, `BriefingService.regenerateIfExists`, `BriefingService.regenerateIfPersonaChanged` |
+| 47 | 면접의 페르소나를 바꿔도 적용되는 페르소나가 그대로면(기본 선택과 같은 것을 고름) 질문을 다시 만들지 않는다. 바뀌었을 때 다시 만드는 것은 준비된 질문뿐이고 요약은 그대로 둔다(2026-11-19). 사전 리포트를 만드는 작업이 돌고 있으면 새 작업을 접수하지 않고, 그 작업이 성공으로 끝난 뒤 시작할 때의 페르소나와 지금의 페르소나가 다르면 한 번 더 만든다(실패로 끝나면 다시 만들지 않는다) | `InterviewService.setPersona`, `BriefingService.regenerateIfExists`, `BriefingService.regenerateIfPersonaChanged` |
 | 48 | `previousRoundChecks` 의 "바로 앞 차수"는 차수(seq)가 정확히 하나 앞인 면접이다. 그 면접이 취소됐으면 더 앞의 차수를 찾지 않고 null | `ReportService.previousRoundChecks` |
 | 49 | 질문 피드백의 `votes` 에 같은 질문이 두 번 오거나 빈(null) 항목이 오면 400. 의견을 줄 수 있는 질문의 종류는 가리지 않는다(그 면접의 질문이면 된다). 사전 리포트를 다시 만들어 사라진 질문의 의견은 조회에서 빼고 돌려준다(저장된 값은 다음 저장 때까지 그대로다) | `QuestionFeedbackService` |
 | 53 | 실시간 기능을 쓰지 않는 면접(`liveEnabled: false`)의 운영 현황판 주의는 시작 지연과 시간 초과뿐이다. 가장 최근 AI 평가·보고서 작업이 실패한 것(`JOB_FAILED`)도 붙이지 않는다(그 면접은 그런 작업을 만들지 않으므로). `silentMinutes` 는 0 으로 둔다. 대시보드의 보고서 대기에도 넣지 않는다 | `OperationsService.toItem`, `DashboardService` |

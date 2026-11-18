@@ -90,6 +90,10 @@ class SecurityAndUploadErrorTest extends ApiTestSupport {
                 "{\"jobCode\":\"Z\",\"title\":\"z\",\"jdText\":\"\"}").expect(403);
         api(HttpMethod.POST, interviewer, "/api/v1/question-bank", "{\"text\":\"질문\"}").expect(403);
         upload(interviewer, recruitmentId, "x.xlsx", new byte[] { 1, 2, 3 }).expect(403);
+        // 업로드는 올리기뿐 아니라 이력, 한 건 조회, 샘플 내려받기도 관리자만 한다.
+        apiGet(interviewer, "/api/v1/recruitments/" + recruitmentId + "/uploads").expect(403);
+        apiGet(interviewer, "/api/v1/uploads/1").expect(403);
+        apiGet(interviewer, "/api/v1/uploads/template").expect(403);
         // 읽기는 된다.
         apiGet(interviewer, "/api/v1/recruitments/" + recruitmentId + "/candidates").expect(200);
         apiGet(interviewer, "/api/v1/question-bank?jobCode=SW").expect(200);

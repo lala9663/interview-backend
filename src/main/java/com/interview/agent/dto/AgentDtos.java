@@ -57,6 +57,9 @@ public final class AgentDtos {
         /** 질문마다 미리 만들 예상 꼬리질문의 수(선택). 실시간 기능을 쓰지 않는 면접에서만 보낸다. */
         @JsonInclude(JsonInclude.Include.NON_NULL)
         private Integer predictedFollowUps;
+        /** 이번에 필요한 부분(선택): "SUMMARY", "QUESTIONS". 없으면 둘 다. 하나만 다시 만들 때 보낸다. */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private List<String> parts;
     }
 
     /** 페르소나 가운데 Agent 가 질문의 표현에 쓰는 부분(4.1 의 persona, 5장 context 의 persona). */

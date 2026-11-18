@@ -44,11 +44,19 @@ public class BriefingService {
     /** 실시간 기능을 쓰지 않는 면접에서 질문마다 요청하는 예상 꼬리질문의 수(API 명세 4.1). */
     private static final int PREDICTED_FOLLOW_UPS = 3;
 
+    /** 작업(AiJob)의 payload 에 무엇을 만드는지 적어 두는 이름. */
+    static final String TARGET = "target";
+
     /** 사전 리포트. previousRoundChecks 는 호출한 쪽(컨트롤러)이 report.ReportService 에서 읽어 넘긴다. */
     @Transactional(readOnly = true)
     public BriefingDto get(Long interviewId, PreviousRoundChecks previousRoundChecks) {
         interviewAccess.requireExisting(interviewId);
-        return BriefingDto.from(briefingRepository.findByInterviewId(interviewId).orElse(null), previousRoundChecks);
+        Briefing b = briefingRepository.findByInterviewId(interviewId).orElse(null);
+        BriefingTarget generating = null;
+        if (b != null && (b.getStatus() == JobStatus.PENDING || b.getStatus() == JobStatus.RUNNING)) {
+            generating = BriefingTarget.ofJob(jobService.latestPayloadText(interviewId, JobType.BRIEFING, TARGET));
+        }
+        return BriefingDto.from(b, previousRoundChecks, generating);
     }
 
     /** 요약 JSON. 없으면 null. (AI 평가·보고서 요청에 넣는다.) */
@@ -73,14 +81,20 @@ public class BriefingService {
     }
 
     @Transactional
-    public AiJob requestGenerate(Long interviewId, CurrentUser user) {
+    public AiJob requestGenerate(Long interviewId, CurrentUser user, BriefingTarget target) {
         interviewAccess.requireWritable(interviewId, user);
-        return requestGenerate(interviewId);
+        return requestGenerate(interviewId, target);
     }
 
-    /** 권한 검사 없이 접수한다(자동 매칭 뒤의 일괄 생성). */
+    /** 권한 검사 없이 요약과 질문을 모두 만드는 작업을 접수한다(자동 매칭 뒤의 일괄 생성). */
     @Transactional
     public AiJob requestGenerate(Long interviewId) {
+        return requestGenerate(interviewId, BriefingTarget.ALL);
+    }
+
+    /** 권한 검사 없이 접수한다. target 이 SUMMARY 면 요약만, QUESTIONS 면 질문만 바꾼다. */
+    @Transactional
+    public AiJob requestGenerate(Long interviewId, BriefingTarget target) {
         Briefing b = briefingRepository.findByInterviewId(interviewId).orElse(null);
         if (b == null) {
             b = new Briefing();
@@ -88,11 +102,12 @@ public class BriefingService {
         }
         b.setStatus(JobStatus.PENDING);
         briefingRepository.save(b);
-        return jobService.submit(JobType.BRIEFING, interviewId, null);
+        return jobService.submit(JobType.BRIEFING, interviewId,
+                target == BriefingTarget.ALL ? null : java.util.Collections.<String, Object>singletonMap(TARGET, target.name()));
     }
 
     /**
-     * 사전 리포트가 이미 만들어져 있으면 다시 만드는 작업을 접수한다(면접의 페르소나를 바꿨을 때).
+     * 사전 리포트가 이미 만들어져 있으면 질문을 다시 만드는 작업을 접수한다(면접의 페르소나를 바꿨을 때. 요약은 그대로 둔다).
      * 아직 만든 적이 없거나 이미 만드는 작업이 돌고 있으면(PENDING·RUNNING) 아무것도 하지 않고 null 을 돌려준다.
      * 돌고 있던 작업이 바꾸기 전의 페르소나로 끝나면 {@link #regenerateIfPersonaChanged} 가 한 번 더 만든다.
      */
@@ -106,7 +121,7 @@ public class BriefingService {
         if (running == JobStatus.PENDING || running == JobStatus.RUNNING) {
             return null;
         }
-        return requestGenerate(interviewId);
+        return requestGenerate(interviewId, BriefingTarget.QUESTIONS);
     }
 
     /**
@@ -130,7 +145,7 @@ public class BriefingService {
         if (latest == JobStatus.PENDING || latest == JobStatus.RUNNING) {
             return null;
         }
-        return requestGenerate(interviewId);
+        return requestGenerate(interviewId, BriefingTarget.QUESTIONS);
     }
 
     @Transactional
@@ -162,9 +177,13 @@ public class BriefingService {
 
     /** 작업을 시작할 때: Agent 요청을 만들고, 그때 적용한 페르소나를 함께 돌려준다(결과를 저장할 때 기록한다). */
     @Transactional(readOnly = true)
-    public Prepared prepare(Long interviewId) {
+    public Prepared prepare(Long interviewId, BriefingTarget target) {
         InterviewContext ctx = contextLoader.load(interviewId);
-        return new Prepared(buildRequest(ctx), ctx.getPersona() == null ? null : ctx.getPersona().getId());
+        AgentDtos.BriefingRequest request = buildRequest(ctx);
+        if (target != BriefingTarget.ALL) {
+            request.setParts(java.util.Collections.singletonList(target.name()));
+        }
+        return new Prepared(request, ctx.getPersona() == null ? null : ctx.getPersona().getId());
     }
 
     /** Agent 요청을 만든다. 면접자의 이름·수험번호는 넣지 않는다. profile 은 블라인드 항목이 빠진 값이다. */
@@ -204,9 +223,12 @@ public class BriefingService {
                 persona.getFollowUpType(), persona.getGuard());
     }
 
-    /** 결과를 저장한다. personaId 는 요청을 만들 때 적용한 페르소나({@link Prepared#getPersonaId()})다. */
+    /**
+     * 결과를 저장한다. personaId 는 요청을 만들 때 적용한 페르소나({@link Prepared#getPersonaId()})다.
+     * target 이 SUMMARY 면 요약만, QUESTIONS 면 질문만 바꾼다(Agent 가 둘 다 돌려줘도 나머지는 버린다).
+     */
     @Transactional
-    public void saveResult(Long interviewId, AgentDtos.BriefingResponse response, Long personaId) {
+    public void saveResult(Long interviewId, AgentDtos.BriefingResponse response, Long personaId, BriefingTarget target) {
         InterviewContext ctx = contextLoader.load(interviewId);
         Briefing b = briefingRepository.findByInterviewId(interviewId).orElse(null);
         if (b == null) {
@@ -214,10 +236,20 @@ public class BriefingService {
             b.setInterviewId(interviewId);
         }
         b.setStatus(JobStatus.SUCCEEDED);
-        b.setGeneratedAt(Times.now());
         b.setModel(response.getModel());
+        if (!target.summary()) {
+            // 질문만 다시 만든다: 요약과 만든 시각, 빠진 항목은 그대로 둔다.
+            b.setPersonaId(personaId);
+            briefingRepository.save(b);
+            saveQuestions(interviewId, response);
+            return;
+        }
+        b.setGeneratedAt(Times.now());
         b.setSummary(response.getSummary());
-        b.setPersonaId(personaId);
+        if (target.questions()) {
+            // 질문에 적용한 페르소나는 질문을 만들 때만 기록한다(요약만 다시 만들면 질문은 예전 페르소나 그대로다).
+            b.setPersonaId(personaId);
+        }
         // 빠진 항목 = 업로드 때 버린 블라인드 항목 + Agent 가 글에서 걸러 낸 항목
         Set<String> excluded = new LinkedHashSet<String>(ctx.getCandidate().getBlindedFields());
         if (response.getExcluded() != null) {
@@ -225,7 +257,12 @@ public class BriefingService {
         }
         b.setExcluded(new ArrayList<String>(excluded));
         briefingRepository.save(b);
+        if (target.questions()) {
+            saveQuestions(interviewId, response);
+        }
+    }
 
+    private void saveQuestions(Long interviewId, AgentDtos.BriefingResponse response) {
         List<QuestionService.Generated> generated = new ArrayList<QuestionService.Generated>();
         if (response.getQuestions() != null) {
             for (AgentDtos.GeneratedQuestion g : response.getQuestions()) {

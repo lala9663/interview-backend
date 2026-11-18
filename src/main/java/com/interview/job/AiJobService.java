@@ -62,6 +62,13 @@ public class AiJobService {
         return job == null ? null : job.getStatus();
     }
 
+    /** 가장 최근 작업에 적어 둔 값(payload 의 field). 작업이 없거나 값이 없으면 null. */
+    @Transactional(readOnly = true)
+    public String latestPayloadText(Long interviewId, JobType type, String field) {
+        AiJob job = jobRepository.findFirstByInterviewIdAndTypeOrderByIdDesc(interviewId, type).orElse(null);
+        return job == null ? null : job.payloadText(field);
+    }
+
     /** PENDING → RUNNING. 이미 다른 상태면 null (중복 실행 방지). */
     @Transactional
     public AiJob markRunning(Long jobId) {

@@ -63,7 +63,7 @@
 ## 5. 권한
 
 - **ADMIN 전용**: API 명세 표에 (ADMIN) 이 붙은 엔드포인트. 컨트롤러 메서드의 `@PreAuthorize("hasRole('ADMIN')")`.
-  채용 등록, 직무 등록·수정, 업로드, 자동 매칭, 면접관 수동 지정, 면접 등록(`POST /candidates/{id}/interviews`), 질문 은행 등록·삭제,
+  채용 등록, 직무 등록·수정, 업로드(올리기와 이력·한 건 조회·샘플 내려받기 모두), 자동 매칭, 면접관 수동 지정, 면접 등록(`POST /candidates/{id}/interviews`), 질문 은행 등록·삭제,
   관리자 집계 세 가지(`/admin/operations`, `/admin/quality`, `/admin/interviewer-stats`),
   페르소나 관리(`POST /admin/personas`, `PATCH /admin/personas/{id}`, `DELETE /admin/personas/{id}`).
 - **면접 단위 쓰기**: 그 면접에 배정된 면접관(`IV_INTERVIEW_ASSIGNEE`)과 ADMIN 만. 서비스에서 `InterviewAccess.requireWritable(interviewId, user)`.

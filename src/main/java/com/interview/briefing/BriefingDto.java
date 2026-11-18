@@ -22,17 +22,20 @@ public class BriefingDto {
     private final List<String> excluded;
     /** 같은 면접자의 바로 앞 차수 보고서의 nextRoundChecks. 없으면 null. */
     private final PreviousRoundChecks previousRoundChecks;
+    /** 만드는 중(PENDING·RUNNING)이면 무엇을 만드는지(ALL·SUMMARY·QUESTIONS). 아니면 null. */
+    private final BriefingTarget generating;
 
-    private BriefingDto(Briefing b, PreviousRoundChecks previousRoundChecks) {
+    private BriefingDto(Briefing b, PreviousRoundChecks previousRoundChecks, BriefingTarget generating) {
         this.status = b == null ? null : b.getStatus();
         this.generatedAt = b == null ? null : Times.toOffset(b.getGeneratedAt());
         this.model = b == null ? null : b.getModel();
         this.summary = b == null ? null : b.getSummary();
         this.excluded = b == null ? new ArrayList<String>() : new ArrayList<String>(b.getExcluded());
         this.previousRoundChecks = previousRoundChecks;
+        this.generating = generating;
     }
 
-    public static BriefingDto from(Briefing b, PreviousRoundChecks previousRoundChecks) {
-        return new BriefingDto(b, previousRoundChecks);
+    public static BriefingDto from(Briefing b, PreviousRoundChecks previousRoundChecks, BriefingTarget generating) {
+        return new BriefingDto(b, previousRoundChecks, generating);
     }
 }

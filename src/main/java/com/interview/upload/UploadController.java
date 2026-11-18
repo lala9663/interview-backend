@@ -41,11 +41,13 @@ public class UploadController {
     }
 
     @GetMapping("/recruitments/{id}/uploads")
+    @PreAuthorize("hasRole('ADMIN')")
     public ListResponse<UploadBatchDto> history(@PathVariable Long id) {
         return ListResponse.of(uploadService.history(id));
     }
 
     @GetMapping("/uploads/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public UploadBatchDto detail(@PathVariable Long id) {
         return uploadService.detail(id);
     }
@@ -55,6 +57,7 @@ public class UploadController {
      * empty=true 면 헤더만 있는 빈 양식을 준다.
      */
     @GetMapping("/uploads/template")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<byte[]> template(@RequestParam(required = false) Boolean empty)
             throws UnsupportedEncodingException {
         boolean headerOnly = Boolean.TRUE.equals(empty);

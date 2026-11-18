@@ -145,6 +145,12 @@ public class FakeAgentClient implements AgentClient {
             }
             response.getQuestions().add(new AgentDtos.GeneratedQuestion("BANK", b.getCategory(), b.getText(), "질문 은행에서 고름"));
         }
+        // 페르소나가 오면 질문 앞에 그 이름을 붙인다(가짜 표시. 실제 Agent 는 질문의 표현을 바꾼다).
+        if (request.getPersona() != null && request.getPersona().getName() != null) {
+            for (AgentDtos.GeneratedQuestion q : response.getQuestions()) {
+                q.setText("[" + request.getPersona().getName() + "] " + q.getText());
+            }
+        }
         // 요청에 predictedFollowUps 가 있으면 질문마다 그 수만큼 예상 꼬리질문을 붙인다.
         int predicted = request.getPredictedFollowUps() == null ? 0 : request.getPredictedFollowUps();
         if (predicted > 0) {

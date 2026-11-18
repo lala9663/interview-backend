@@ -81,6 +81,7 @@ PUT /interviews/{id}/persona
 
 - **실시간 기능 사용 여부(`liveEnabled`)**: 트랙으로 정한다(`LiveProperties`). 면접마다 따로 켜고 끄는 값은 없다. 쓰지 않는 면접은 입장권과 보고서 다시 만들기가 `409 LIVE_DISABLED` 이고, 방을 끝내도 AI 작업을 접수하지 않으며, 대시보드의 보고서 대기에 들어가지 않고, 운영 현황판에서는 시작 지연(`NOT_STARTED`)과 시간 초과(`OVERTIME`)만 붙는다(`SILENT`·`NO_AUDIO`·`STT_BACKLOG`·`AGENT_DOWN`·`JOB_FAILED` 는 붙지 않고 `silentMinutes` 는 0).
 - **적용되는 페르소나**: `PersonaService.Resolver` 가 정한다. 면접에 고른 것(`IV_INTERVIEW.PERSONA_ID`)이 쓰는 중이면 그것, 꺼졌거나 고르지 않았으면 기본 선택(추천이면서 쓰는 것 가운데 가장 먼저 만든 것, 추천이 없으면 쓰는 것 가운데 가장 먼저 만든 것). 방이 LIVE·ENDED 면 꺼졌어도 고른 것 그대로. Interview 응답, 브리핑 요청, 방 context 가 같은 규칙을 쓴다(`InterviewAssembler`, `InterviewContext.Loader`).
+- **요약과 질문을 따로 다시 만들기**: 브리핑 생성 요청의 `target`(`ALL`·`SUMMARY`·`QUESTIONS`, `BriefingTarget`)을 작업(AiJob)의 payload 에 적어 두고, 결과를 저장할 때 그 부분만 바꾼다(`BriefingService.saveResult`). Agent 에는 `parts` 로 알린다. 만드는 중에 무엇을 만드는지는 가장 최근 브리핑 작업의 payload 에서 읽어 응답의 `generating` 으로 준다. 페르소나를 바꿨을 때는 질문만 다시 만든다.
 - **예상 꼬리질문**: 브리핑 응답의 `questions[].followUps` 를 그 질문을 부모(`parentQuestionId`)로 하는 `FOLLOW_UP` 질문(category "예상 꼬리질문")으로 저장한다. 순서는 준비된 질문(1부터) → 남긴 질문 → 예상 꼬리질문. 브리핑을 다시 만들면 아직 묻지 않은 준비된 질문과 예상 꼬리질문을 지우고 새것으로 바꾼다. 이미 물은 것은 남는다(부모 질문이 지워졌으면 부모 없이 남는다) (`QuestionService.replaceGenerated`).
 - **기본 페르소나**: 서버가 뜰 때 `IV_PERSONA` 가 비어 있으면 다섯 가지를 넣는다(`PersonaInitializer`, 모든 프로파일).
 
