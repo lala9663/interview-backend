@@ -77,7 +77,7 @@ jdbc:h2:file:./data/interview;MODE=Oracle;DEFAULT_NULL_ORDERING=HIGH;AUTO_SERVER
 
 1. 엔티티를 고치고 `./gradlew generateOracleSchema`.
 2. `git diff db/oracle/schema.sql` 로 바뀐 부분을 본다.
-3. 그 차이를 `ALTER TABLE ...` 문으로 옮겨 `db/oracle/changes/날짜_설명.sql` 로 저장한다(예: `20261120_add_interview_location.sql`).
+3. 그 차이를 `ALTER TABLE ...` 문으로 옮겨 `db/oracle/changes/날짜_설명.sql` 로 저장한다(예: `20261120_add_interview_location.sql`). `db/oracle/changes/` 폴더는 아직 없다. 처음 쓰는 사람이 만든다.
 4. 배포 순서: ALTER 실행 → 앱 배포. 컬럼 삭제·이름 변경은 두 번에 나눈다(새 컬럼 추가 → 앱 배포 → 옛 컬럼 삭제).
 
 Flyway 같은 마이그레이션 도구는 아직 넣지 않았다([open-questions.md](open-questions.md)).

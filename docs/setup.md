@@ -46,6 +46,8 @@ curl -H "Authorization: Bearer $TOKEN" -o sample.xlsx "http://localhost:8080/api
 curl -H "Authorization: Bearer $TOKEN" -F "file=@sample.xlsx" "http://localhost:8080/api/v1/recruitments/1/uploads"
 ```
 
+샘플 엑셀의 직무 코드는 신입 공채용이다(`upload.SampleExcelGenerator`). 신입은 기본 설정(`app.live.new-grad-enabled=false`)에서 실시간 기능이 꺼져 있어, 올린 면접자로는 질문 화면과 평가 입력까지만 된다(입장권은 `409 LIVE_DISABLED`, 종료해도 AI 작업을 접수하지 않는다). 전사·보고서까지 보려면 경력 채용의 시드 면접으로 들어간다.
+
 Windows 의 Git Bash 에서 `curl -d '{"한글":...}'` 처럼 한글을 명령줄에 직접 쓰면 인코딩이 깨져 400 이 날 수 있다. 본문을 UTF-8 파일로 만들어 `--data-binary @파일` 로 보낸다.
 
 ## 3. 세 서비스를 함께 띄울 때
@@ -56,7 +58,7 @@ Windows 의 Git Bash 에서 `curl -d '{"한글":...}'` 처럼 한글을 명령�
 | 백엔드 | `http://localhost:8080` | - |
 | Agent | `http://localhost:8000` | `INTERNAL_API_KEY`, `ROOM_TICKET_SECRET` 이 백엔드와 같아야 한다 |
 
-기본값끼리는 이미 맞춰져 있다.
+비밀키(`INTERNAL_API_KEY`, `ROOM_TICKET_SECRET`)와 주소는 기본값끼리 이미 맞춰져 있다. 하나는 바꿔야 한다: Agent 의 `BACKEND_MODE` 는 기본값이 `fake`(가짜 백엔드)라, `BACKEND_MODE=http` 로 띄워야 Agent 가 이 백엔드에서 방 정보를 읽고 전사·꼬리질문을 저장한다(agent 레포 `docs/setup.md` 3장).
 
 ## 4. 테스트와 빌드
 

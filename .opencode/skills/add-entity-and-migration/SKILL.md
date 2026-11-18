@@ -96,7 +96,7 @@ public class Something {
 dev/prod 는 `ddl-auto=validate` 다. 스키마가 엔티티와 다르면 앱이 뜨지 않는다.
 
 1. `git diff db/oracle/schema.sql` 로 바뀐 부분을 본다.
-2. 그 차이를 ALTER 문으로 옮겨 `db/oracle/changes/YYYYMMDD_설명.sql` 로 저장한다.
+2. 그 차이를 ALTER 문으로 옮겨 `db/oracle/changes/YYYYMMDD_설명.sql` 로 저장한다. `db/oracle/changes/` 폴더는 아직 없다. 처음 쓰는 사람이 만든다.
 
    ```sql
    -- 20261120_add_interview_location.sql
