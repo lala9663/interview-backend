@@ -119,5 +119,7 @@ DRM 이 풀린 파일이 들어온다고 가정한다. 백엔드는 DRM 을 풀�
 
 ## 7. API 입력(경력용)은 자리만 있다
 
+경력은 채용 시스템의 읽기 전용 DB 테이블에서 읽기로 했다(11/18 회의. 받은 것은 아직 없다). 지금 코드의 자리는 아래의 API용 변환 클래스다.
+
 `candidate.imports.ApiCandidateSource` 가 API 본문을 `CandidateRow` 로 바꾸는 변환만 한다. 이것을 부르는 엔드포인트는 API 명세에 경로가 없어 만들지 않았다.
 붙이는 법은 `.opencode/skills/add-candidate-source/SKILL.md` 를 본다. 엑셀이든 API 든 검증·저장은 같은 `CandidateImportService.importRows` 를 거친다.

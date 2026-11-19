@@ -35,7 +35,7 @@ curl -H "Authorization: Bearer <토큰>" http://localhost:8080/api/v1/recruitmen
 
 - 처음 뜰 때 가짜 시드 데이터가 들어간다: 사용자 6명(`E1001` 김서연 ADMIN, `E1002`~`E1006` 면접관), 채용 2개, 면접자 24명(신입 12, 경력 12), 오늘 날짜의 면접들.
 - DB 파일은 `./data/` 에 생긴다. 지우면 시드부터 다시 시작한다. 예전에 만든 `data/` 폴더가 있으면 스키마나 값이 지금과 달라 읽을 때 오류가 날 수 있다. 서버를 끄고 `data/` 를 지운 뒤 다시 띄운다([docs/setup.md](docs/setup.md) 2장).
-- Agent 없이 AI 작업(브리핑·평가·보고서)까지 보려면 가짜 Agent 로 띄운다: `AGENT_MODE=fake ./gradlew bootRun`. 가짜 Agent 는 페르소나가 전달되는 것이 보이도록 준비된 질문 앞에 `[페르소나 이름]`을 붙인다(실제 Agent 는 질문의 표현을 바꾼다)
+- Agent 없이 AI 작업(브리핑·평가·보고서)까지 보려면 가짜 Agent 로 띄운다: `AGENT_MODE=fake ./gradlew bootRun`. 가짜 Agent 는 페르소나가 전달되는 것이 보이도록 준비된 질문 앞에 `[페르소나 이름]`을 붙인다(실제 Agent 는 아직 페르소나를 무시한다. API 명세로는 질문의 표현을 바꾸게 되어 있다)
 - 샘플 엑셀: 로그인 후 `GET /api/v1/uploads/template` (가짜 50행, 오류 행 3개 포함). 그대로 신입 공채에 올리면 성공 47·오류 3 이 나온다. 샘플의 직무 코드는 신입 공채용이고 신입은 기본 설정(`app.live.new-grad-enabled=false`)에서 실시간 기능이 꺼져 있어, 올린 면접자로는 질문 화면과 평가 입력까지만 된다. 전사·보고서까지 보려면 경력 채용의 시드 면접으로 들어간다.
 
 ## 명령어
